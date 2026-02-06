@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :locations
   resources :bookings
  root to: "bookings#index"
   devise_for :users

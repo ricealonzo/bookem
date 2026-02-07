@@ -1,0 +1,39 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @location %>
+
+<h2>Bookings Calendar</h2>
+
+    
+  <%= month_calendar(events: @bookings, attribute: :started_at, end_attribute: :ended_at) do |date, bookings| %>
+      <div class="day">
+
+      <div class="fw-bold"><%= date.day %></div>
+
+        <% bookings.each do |booking| %>
+            <div class="card-sm text-truncate" style="width: 4rem;">
+              <div class="card-header " >
+                <div class="card-title">
+                  (<%= link_to booking.user.email, booking %>)
+                </div>
+              </div>
+
+
+              <div class="card-footer">
+                <p class="card-text"> <%= booking.started_at.strftime("%H:%M %p") %> to <%= booking.ended_at.strftime("%H:%M %p") %></p>
+            </div>
+        <% end %>
+      </div>
+  <% end %>
+    </div>
+
+
+
+<div>
+  <%= link_to "Back to locations", locations_path %>
+
+  <% if current_user&.id == @location.host_id %>
+    <%= link_to "Edit this location", edit_location_path(@location) %> |
+    <%= button_to "Destroy this location", @location, method: :delete %>
+  <% end %>
+</div>

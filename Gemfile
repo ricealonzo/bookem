@@ -57,6 +57,7 @@ group :development do
 end
 
 # Additional gems for AppDev
+gem "simple_calendar"
 gem "active_link_to"
 gem "appdev_support"
 gem "awesome_print"

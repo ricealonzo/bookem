@@ -3,12 +3,12 @@
   <div class="card" style="width: 18rem;">
     <img src="..." class="card-img-top" alt="...">
     <div class="card-body">
-      <h5 class="card-title"> <%= location.user.email %> </h5>
+      <h5 class="card-title"> <%= location.host.email %> </h5>
     </div>
     <ul class="list-group list-group-flush">
       <li class="list-group-item"><span>City:</span> <%= location.city %> </li>
       <li class="list-group-item"> <span>State:</span> <%= location.state %> </li>
-      <li class="list-group-item"> <span> Host:</span> <%= location.user.email %>  </li>
+      <li class="list-group-item"> <span> Host:</span> <%= location.host.email %>  </li>
 
       <% if current_page?(location_path(location)) %>
         <li class="list-group-item"> <span> this is should show only if we are on the show page</span> <%= location.address %>  </li>

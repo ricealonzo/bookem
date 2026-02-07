@@ -17,6 +17,9 @@ class Booking < ApplicationRecord
   validates :location_id, presence: true
   validates :guest_id, presence: true
 
-  belongs_to :location
-  belongs_to :user, class_name: "User", foreign_key: "guest_id"
+  belongs_to :guest, required: true, class_name: "User", foreign_key: "guest_id", counter_cache: true
+
+  belongs_to :location, required: true, class_name: "Location", foreign_key: "location_id"
+
+  has_one  :host, through: :location, source: :host
 end

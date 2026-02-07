@@ -28,4 +28,11 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
+
+  has_many  :locations, class_name: "Location", foreign_key: "host_id", dependent: :destroy
+
+  has_many  :bookings, class_name: "Booking", foreign_key: "guest_id", dependent: :destroy
+
+  has_many :hostings, through: :locations, source: :bookings
+
 end

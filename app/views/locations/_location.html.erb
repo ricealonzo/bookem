@@ -1,33 +1,36 @@
 <div id="<%= dom_id location %>">
 
-  <div class="card" style="width: 18rem;">
-    <img src="..." class="card-img-top" alt="...">
-    <div class="card-body">
-      <h5 class="card-title"> <%= location.host.email %> </h5>
+  <div class="card location-card">
+    <div class="location-card-media">
+      <img
+        src="https://placehold.co/600x400?text=Location"
+        class="card-img"
+        alt="Location photo">
+      <div class="card-img-overlay location-card-overlay">
+        <h5 class="card-title mb-0"><%= location.host.email %></h5>
+      </div>
     </div>
+
     <ul class="list-group list-group-flush">
-      <li class="list-group-item"><span>City:</span> <%= location.city %> </li>
-      <li class="list-group-item"> <span>State:</span> <%= location.state %> </li>
-      <li class="list-group-item"> <span> Host:</span> <%= location.host.email %>  </li>
+      <li class="list-group-item"><span>City:</span> <%= location.city %></li>
+      <li class="list-group-item"><span>State:</span> <%= location.state %></li>
+      <li class="list-group-item"><span>Host:</span> <%= location.host.email %></li>
 
       <% if current_page?(location_path(location)) %>
-        <li class="list-group-item"> <span> this is should show only if we are on the show page</span> <%= location.address %>  </li>
-        <li class="list-group-item"> <span> Host:</span> it works </li>
-
-      <% end %>
+        <li class="list-group-item"><span>Show page only:</span> <%= location.address %></li>
+        <li class="list-group-item"><span>Host:</span> it works</li>
     </ul>
     
     <div class="card-body">
-      <p class="card-text"> <span> Description:</span> <br> <%= location.description %> </p>
-
+      <p class="card-text"><span>Description:</span><br><%= location.description %></p>
     </div>
+      <% end %>
 
     <div class="card-body">
-       <% if !current_page?(location_path(location)) %>
-          <%= link_to "Show this location", location,  class:"card-link" %>
-
-          <%= link_to "New location", new_location_path, class:"card-link" %>
-        <% end %>
+      <% if !current_page?(location_path(location)) %>
+        <%= link_to "Show this location", location, class: "card-link" %>
+        <%= link_to "New location", new_location_path, class: "card-link" %>
+      <% end %>
 
     </div>
   </div>

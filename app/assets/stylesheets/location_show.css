@@ -26,3 +26,35 @@
   justify-content: space-evenly;
   height: 100%;
 }
+#locations {
+  display: flex;
+flex-flow: wrap;
+justify-content: space-around;
+  margin: 30px;
+  height: 40%;
+}
+
+.location-card {
+  width: 18rem;
+  margin: 25px;
+}
+
+.location-card-media {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+}
+
+.location-card-media .card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.location-card-overlay {
+  display: flex;
+  align-items: flex-end;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.65) 100%);
+  color: #fff;
+  padding: 0.75rem;
+}

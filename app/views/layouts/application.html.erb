@@ -58,16 +58,16 @@
                 <a href="/users/edit">Edit profile</a>
               </li>
               <li>
-                <a href="/users/sign_out">Sign out</a>
+                <%= link_to "Sign out", destroy_user_session_path, data: { turbo_method: :delete } %>
+              </li>
+              <li>
+                <%= link_to "Locations", locations_path %>
               </li>
             </ul>
           <% else %>
             <ul>
               <li>
-                <a href="/users/sign_up">Sign up</a>
-              </li>
-              <li>
-                <a href="/users/sign_in">Sign in</a>
+                <a href="/users/sign_in">Log in</a>
               </li>
             </ul>
           <% end %>

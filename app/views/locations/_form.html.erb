@@ -41,10 +41,7 @@
     <%= form.text_field :postal_code %>
   </div>
 
-  <div>
-    <%= form.label :host_id, style: "display: block" %>
-    <%= form.number_field :host_id %>
-  </div>
+  <%= form.hidden_field :host_id, value: @location.host_id %>
 
   <div>
     <%= form.submit %>

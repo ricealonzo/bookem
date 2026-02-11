@@ -24,14 +24,12 @@
     </div>
 
     <div class="mb-3">
-    <%= form.label :location_id, class: "form-label" %>
-    <%= form.number_field :location_id, class: "form-control" %>
+
+    <%= form.hidden_field :location_id, value: @booking.location_id %>
   </div>
   
-    <div class="mb-3">
-      <%= form.label :guest_id, style: "display: block" %>
-      <%= form.number_field :guest_id, class: "form-control"  %>
-    </div>
+   <%= form.hidden_field :guest_id, value: @booking.guest_id %>
+
 
 
     <div>

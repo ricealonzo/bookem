@@ -1,39 +1,39 @@
 <% content_for :title, "Bookings" %>
 
-<h1>Bookings</h1>
+<header class="page-header">
+  <h1>Bookings</h1>
+</header>
 
-<section class="bookings-section">
-  <h2>Requests for your locations</h2>
+<section class="bookings-section" aria-labelledby="requests-heading">
+  <h2 id="requests-heading">Requests for your locations</h2>
   <% if @requests.any? %>
-    <div id="booking_requests" class="row g-3">
+    <ul id="booking_requests" class="booking-list">
       <% @requests.each do |booking| %>
-        <div class="col-12 col-md-6 col-lg-4">
+        <li>
           <%= render booking, show_link: true %>
           <% if policy(booking).confirm? %>
             <div class="booking-actions">
-              <%= button_to "Confirm", confirm_booking_path(booking), method: :patch %>
-              <%= button_to "Decline", decline_booking_path(booking), method: :patch, class: "secondary" %>
+              <%= button_to "Confirm", confirm_booking_path(booking), method: :patch, class: "button button-small" %>
+              <%= button_to "Decline", decline_booking_path(booking), method: :patch, class: "button button-small button-quiet" %>
             </div>
           <% end %>
-        </div>
+        </li>
       <% end %>
-    </div>
+    </ul>
   <% else %>
-    <p>No one has requested your locations yet. <%= link_to "List a location", new_location_path %> to start hosting.</p>
+    <p class="empty-state">No one has requested your locations yet. <%= link_to "List your space", new_location_path %> to start hosting.</p>
   <% end %>
 </section>
 
-<section class="bookings-section">
-  <h2>Your trips</h2>
+<section class="bookings-section" aria-labelledby="trips-heading">
+  <h2 id="trips-heading">Your trips</h2>
   <% if @trips.any? %>
-    <div id="bookings" class="row g-3">
+    <ul id="bookings" class="booking-list">
       <% @trips.each do |booking| %>
-        <div class="col-12 col-md-6 col-lg-4">
-          <%= render booking, show_link: true %>
-        </div>
+        <li><%= render booking, show_link: true %></li>
       <% end %>
-    </div>
+    </ul>
   <% else %>
-    <p>You haven't booked anything yet. <%= link_to "Browse locations", locations_path %>.</p>
+    <p class="empty-state">You haven't booked anything yet. <%= link_to "Browse locations", locations_path %> to find a space.</p>
   <% end %>
 </section>

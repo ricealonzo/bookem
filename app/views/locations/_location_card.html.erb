@@ -1,0 +1,14 @@
+<%= link_to location, class: "location-card", id: dom_id(location) do %>
+  <div class="location-card-photo">
+    <% if location.image? %>
+      <%= image_tag location.image.url, alt: "Photo of #{location.name}", loading: "lazy" %>
+    <% else %>
+      <span class="photo-placeholder" aria-hidden="true"><%= location.name.first %></span>
+    <% end %>
+  </div>
+  <h3 class="location-card-name"><%= location.name %></h3>
+  <p class="location-card-place"><%= [location.city, location.state].compact_blank.join(", ") %></p>
+  <% if location.description.present? %>
+    <p class="location-card-description"><%= truncate(location.description, length: 110) %></p>
+  <% end %>
+<% end %>

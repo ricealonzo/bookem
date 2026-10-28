@@ -132,3 +132,74 @@ jobs:
           jq -r '.warnings[] | "::warning file=\(.file),line=\(.line // 1)::\(.warning_type) [\(.check_name) \(.fingerprint)]: \(.message) (\(.confidence))"' tmp/brakeman.json || true
           jq -r '.errors[]? | "::error::\(.error) \(.location // "")"' tmp/brakeman.json || true
           jq -r '.obsolete[]? | "::error::Obsolete ignore entry \(.)"' tmp/brakeman.json || true
+
+  # Boots the app with sample data and screenshots the main pages, then
+  # publishes them to the ci-screenshots branch for design review.
+  screenshots:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/bookem_development
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Set up database with sample data
+        run: |
+          bin/rails db:create db:schema:load
+          bin/rails sample_data
+          echo "HOST_EMAIL=$(bin/rails runner 'id = Booking.joins(:location).group("locations.host_id").count.max_by { |_, c| c }&.first; puts User.find(id).email if id')" >> "$GITHUB_ENV"
+
+      - name: Start the app
+        run: |
+          bin/rails server -p 3000 -d
+          for i in $(seq 1 60); do curl -sf http://localhost:3000 >/dev/null && break; sleep 2; done
+
+      - name: Take screenshots
+        run: |
+          mkdir -p /tmp/shots /tmp/pw
+          cd /tmp/pw && npm init -y >/dev/null && npm install --silent playwright@1
+          npx playwright install --with-deps chromium >/dev/null
+          cp "$GITHUB_WORKSPACE/script/screenshots.mjs" /tmp/pw/
+          node /tmp/pw/screenshots.mjs http://localhost:3000 /tmp/shots
+
+      - name: Report server errors
+        if: always()
+        run: grep -E "Error|Exception" log/development.log | grep -v "RoutingError" | sort | uniq -c | sort -rn | head -10 | sed 's/^/::warning::/' || true
+
+      - name: Publish screenshots
+        if: always()
+        run: |
+          cd /tmp/shots
+          git init -q -b ci-screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Screenshots for ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-screenshots
+          echo "::notice::Screenshots published for ${GITHUB_SHA::7}: $(ls | tr '\n' ' ')"

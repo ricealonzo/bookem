@@ -1,12 +1,11 @@
-<% content_for :title, "Editing location" %>
+<% content_for :title, "Edit #{@location.name}" %>
 
+<div class="narrow form-page">
+  <header class="page-header">
+    <h1>Edit <%= @location.name %></h1>
+  </header>
 
+  <%= render "form", location: @location %>
 
-<%= render "form", location: @location %>
-
-<br>
-
-<div>
-  <%= link_to "Show this location", @location %> |
-  <%= link_to "Back to locations", locations_path %>
+  <p class="back-link"><%= link_to "Back to #{@location.name}", @location %></p>
 </div>

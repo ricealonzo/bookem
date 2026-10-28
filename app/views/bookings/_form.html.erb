@@ -1,9 +1,9 @@
-<%= form_with(model: booking, class: "booking_form") do |form| %>
-  <h2><%= booking.persisted? ? "Change Booking Times" : "Book Now" %></h2>
+<%= form_with(model: booking, class: "booking-form") do |form| %>
+  <h2><%= booking.persisted? ? "Change Booking Times" : "Request a time" %></h2>
 
   <% if booking.errors.any? %>
     <div class="form-errors" role="alert">
-      <h3><%= pluralize(booking.errors.count, "problem") %> with this booking:</h3>
+      <p>This booking couldn't be saved:</p>
       <ul>
         <% booking.errors.each do |error| %>
           <li><%= error.full_message %></li>
@@ -12,26 +12,29 @@
     </div>
   <% end %>
 
-  <p>You are booking <strong><%= booking.location.name %></strong>.</p>
+  <% unless booking.persisted? %>
+    <p class="form-intro">at <strong><%= booking.location.name %></strong></p>
+  <% end %>
 
   <% min_time = Time.current.strftime("%Y-%m-%dT%H:%M") %>
 
-  <div class="mb-3">
+  <div class="field">
     <%= form.label :started_at, "Start" %>
-    <%= form.datetime_field :started_at, class: "form-control", min: min_time, required: true %>
+    <%= form.datetime_field :started_at, min: min_time, required: true, data: { booking_picker_target: "start" } %>
   </div>
 
-  <div class="mb-3">
+  <div class="field">
     <%= form.label :ended_at, "End" %>
-    <%= form.datetime_field :ended_at, class: "form-control", min: min_time, required: true %>
+    <%= form.datetime_field :ended_at, min: min_time, required: true, data: { booking_picker_target: "end" } %>
   </div>
 
   <% unless booking.persisted? %>
     <%= form.hidden_field :location_id, value: booking.location_id %>
-    <p class="form-hint">The host will confirm or decline your request.</p>
   <% end %>
 
-  <div>
-    <%= form.submit booking.persisted? ? "Save Changes" : "Request Booking" %>
-  </div>
+  <%= form.submit booking.persisted? ? "Save Changes" : "Request Booking", class: "button button-wide" %>
+
+  <% unless booking.persisted? %>
+    <p class="form-hint">The host confirms or declines your request. You can cancel any time before it starts.</p>
+  <% end %>
 <% end %>

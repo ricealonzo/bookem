@@ -1,36 +1,40 @@
 <% content_for :title, "Booking at #{@booking.location.name}" %>
 
-<h1>Booking</h1>
+<div class="narrow">
+  <header class="page-header">
+    <h1>Booking</h1>
+  </header>
 
-<%= render @booking %>
+  <%= render @booking %>
 
-<p class="booking-explainer">
-  <% case @booking.status %>
-  <% when "pending" %>
-    Waiting for the host to confirm or decline.
-  <% when "confirmed" %>
-    Confirmed by the host.
-  <% when "declined" %>
-    The host declined this request.
-  <% when "cancelled" %>
-    This booking was cancelled.
-  <% end %>
-</p>
+  <p class="booking-explainer">
+    <% case @booking.status %>
+    <% when "pending" %>
+      Waiting for the host to confirm or decline.
+    <% when "confirmed" %>
+      Confirmed by the host.
+    <% when "declined" %>
+      The host declined this request.
+    <% when "cancelled" %>
+      This booking was cancelled.
+    <% end %>
+  </p>
 
-<div class="booking-actions">
-  <% if policy(@booking).confirm? %>
-    <%= button_to "Confirm", confirm_booking_path(@booking), method: :patch %>
-    <%= button_to "Decline", decline_booking_path(@booking), method: :patch, class: "secondary" %>
-  <% end %>
+  <div class="booking-actions">
+    <% if policy(@booking).confirm? %>
+      <%= button_to "Confirm", confirm_booking_path(@booking), method: :patch, class: "button" %>
+      <%= button_to "Decline", decline_booking_path(@booking), method: :patch, class: "button button-quiet" %>
+    <% end %>
 
-  <% if policy(@booking).update? %>
-    <%= link_to "Change times", edit_booking_path(@booking) %>
-  <% end %>
+    <% if policy(@booking).update? %>
+      <%= link_to "Change times", edit_booking_path(@booking), class: "button button-quiet" %>
+    <% end %>
 
-  <% if policy(@booking).cancel? %>
-    <%= button_to "Cancel booking", cancel_booking_path(@booking), method: :patch, class: "secondary",
-          form: { data: { turbo_confirm: "Cancel this booking?" } } %>
-  <% end %>
+    <% if policy(@booking).cancel? %>
+      <%= button_to "Cancel booking", cancel_booking_path(@booking), method: :patch, class: "button button-danger",
+            data: { confirm: "Cancel this booking?" } %>
+    <% end %>
+  </div>
+
+  <p class="back-link"><%= link_to "Back to bookings", bookings_path %></p>
 </div>
-
-<p><%= link_to "Back to bookings", bookings_path %></p>

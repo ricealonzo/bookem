@@ -1,8 +1,7 @@
-<%= form_with(model: location, html: { class: "location_form", multipart: true }) do |form| %>
+<%= form_with(model: location, html: { class: "location-form", multipart: true }) do |form| %>
   <% if location.errors.any? %>
-    <div style="color: red">
-      <h2><%= pluralize(location.errors.count, "error") %> prohibited this location from being saved:</h2>
-
+    <div class="form-errors" role="alert">
+      <p>This location couldn't be saved:</p>
       <ul>
         <% location.errors.each do |error| %>
           <li><%= error.full_message %></li>
@@ -10,44 +9,44 @@
       </ul>
     </div>
   <% end %>
-  <h2><%= location.persisted? ? "Edit Location" : "New Location" %></h2>
 
-  <div>
-    <%= form.label :name, style: "display: block" %>
-    <%= form.text_field :name %>
+  <div class="field">
+    <%= form.label :name %>
+    <%= form.text_field :name, required: true, placeholder: "Northside Creative Studio" %>
   </div>
 
-  <div>
-    <%= form.label :description, style: "display: block" %>
-    <%= form.textarea :description %>
+  <div class="field">
+    <%= form.label :description %>
+    <%= form.textarea :description, rows: 4, placeholder: "What the space is good for, what's included, anything guests should know." %>
   </div>
 
-  <div>
-    <%= form.label :address, style: "display: block" %>
-    <%= form.text_field :address %>
+  <div class="field">
+    <%= form.label :address, "Street address" %>
+    <%= form.text_field :address, required: true, autocomplete: "address-line1" %>
   </div>
 
-  <div>
-    <%= form.label :city, style: "display: block" %>
-    <%= form.text_field :city %>
+  <div class="field-row">
+    <div class="field">
+      <%= form.label :city %>
+      <%= form.text_field :city, required: true, autocomplete: "address-level2" %>
+    </div>
+
+    <div class="field field-short">
+      <%= form.label :state %>
+      <%= form.text_field :state, required: true, autocomplete: "address-level1" %>
+    </div>
+
+    <div class="field field-short">
+      <%= form.label :postal_code, "ZIP code" %>
+      <%= form.text_field :postal_code, required: true, autocomplete: "postal-code" %>
+    </div>
   </div>
 
-  <div>
-    <%= form.label :state, style: "display: block" %>
-    <%= form.text_field :state %>
-  </div>
-
-  <div>
-    <%= form.label :postal_code, style: "display: block" %>
-    <%= form.text_field :postal_code %>
-  </div>
-
-  <div>
-    <%= form.label :image, style: "display: block" %>
+  <div class="field">
+    <%= form.label :image, location.image? ? "Replace photo" : "Photo" %>
     <%= form.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp" %>
+    <p class="field-hint">JPG, PNG, GIF or WebP. A wide photo of the space works best.</p>
   </div>
 
-  <div>
-    <%= form.submit %>
-  </div>
+  <%= form.submit location.persisted? ? "Save Changes" : "List This Space", class: "button" %>
 <% end %>

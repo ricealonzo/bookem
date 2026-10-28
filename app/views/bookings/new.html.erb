@@ -1,5 +1,7 @@
 <% content_for :title, "Book #{@booking.location.name}" %>
 
-<%= render "form", booking: @booking %>
+<div class="narrow form-page">
+  <%= render "form", booking: @booking %>
 
-<p><%= link_to "Back to #{@booking.location.name}", @booking.location %></p>
+  <p class="back-link"><%= link_to "Back to #{@booking.location.name}", @booking.location %></p>
+</div>

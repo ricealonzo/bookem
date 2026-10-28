@@ -1,8 +1,9 @@
 <% content_for :title, "Change booking" %>
 
-<%= render "form", booking: @booking %>
+<div class="narrow form-page">
+  <%= render "form", booking: @booking %>
 
-<p>
-  <%= link_to "Back to this booking", @booking %> |
-  <%= link_to "Back to bookings", bookings_path %>
-</p>
+  <p class="back-link">
+    <%= link_to "Back to this booking", @booking %> or <%= link_to "all bookings", bookings_path %>
+  </p>
+</div>

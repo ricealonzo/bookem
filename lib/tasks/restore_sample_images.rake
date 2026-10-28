@@ -2,9 +2,19 @@ desc "Re-upload the sample location photos from db/sample_images (keeps all othe
 task({ restore_sample_images: :environment }) do
   require Rails.root.join("db", "sample_data")
 
-  if ENV["CLOUDINARY_URL"].blank? && Rails.env.production?
-    puts "Warning: CLOUDINARY_URL is not set, so photos will be saved to the server's"
-    puts "disk and disappear again on the next deploy or restart."
+  # ONLY_MISSING=true (used by bin/render-build.sh) skips photos that are
+  # already on Cloudinary, so deploys don't re-upload them every time.
+  only_missing = ENV["ONLY_MISSING"] == "true"
+
+  if ENV["CLOUDINARY_URL"].blank?
+    if only_missing
+      puts "CLOUDINARY_URL is not set; skipping photo restore."
+      next
+    end
+    if Rails.env.production?
+      puts "Warning: CLOUDINARY_URL is not set, so photos will be saved to the server's"
+      puts "disk and disappear again on the next deploy or restart."
+    end
   end
 
   restored = 0
@@ -18,6 +28,12 @@ task({ restore_sample_images: :environment }) do
     end
 
     locations.each do |location|
+      # Photos already on Cloudinary are saved as "v<version>/<name>"; plain
+      # file names are leftovers from the old disk storage.
+      if only_missing && location.read_attribute(:image).to_s.include?("/")
+        next
+      end
+
       File.open(SampleData.sample_image_path(sample[:image_file])) do |file|
         location.image = file
         location.save!

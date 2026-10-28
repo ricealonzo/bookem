@@ -1,4 +1,4 @@
-desc "Re-upload the sample location photos from db/sample_images (keeps all other data)"
+desc "Re-upload sample location photos to Cloudinary and give locations with lost photos a stand-in (keeps all other data)"
 task({ restore_sample_images: :environment }) do
   require Rails.root.join("db", "sample_data")
 
@@ -43,14 +43,25 @@ task({ restore_sample_images: :environment }) do
     end
   end
 
+  # Locations added through the site whose photo was lost with Render's disk
+  # (still a plain file name, not on Cloudinary) get a stand-in sample photo.
+  # Their owners can replace it from the location's edit page.
   sample_names = SampleData::LOCATIONS.map { |sample| sample[:name] }
-  others = Location.where.not(name: sample_names).where.not(image: [nil, ""])
+  lost = []
+  if ENV["CLOUDINARY_URL"].present?
+    lost = Location.where.not(name: sample_names).where.not(image: [nil, ""]).select do |location|
+      !location.read_attribute(:image).to_s.include?("/")
+    end
+  end
+
+  lost.each do |location|
+    File.open(SampleData.sample_image_path("event_space.jpg")) do |file|
+      location.image = file
+      location.save!
+    end
+    puts "Gave #{location.name} (id #{location.id}) a stand-in photo"
+  end
 
   puts
-  puts "Restored #{restored} sample photo(s)."
-  if others.any?
-    puts "These locations had photos uploaded through the site. Those files can't be"
-    puts "recovered, so re-upload them from each location's edit page:"
-    others.each { |location| puts "  - #{location.name} (id #{location.id})" }
-  end
+  puts "Restored #{restored} sample photo(s) and #{lost.size} stand-in photo(s)."
 end

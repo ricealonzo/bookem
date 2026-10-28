@@ -9,7 +9,7 @@ These issues must be fixed before the project can be considered functional or sa
 ### P0-1: Hardcoded Credentials in Version-Controlled Initializer
 
 - **File**: `config/initializers/web_rake.rb`
-- **Problem**: Plaintext username and password (`'Loveis1988'`) are committed to git. Anyone with repository access has these credentials. Rotating them after the fact does not remove them from git history without a rewrite.
+- **Problem**: Plaintext username and password (`'[REDACTED]'`) are committed to git. Anyone with repository access has these credentials. Rotating them after the fact does not remove them from git history without a rewrite.
 - **Suggested Solution**: Move credentials to Rails encrypted credentials or environment variables.
 
 ```ruby

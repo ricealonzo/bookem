@@ -264,8 +264,8 @@ The test infrastructure is properly configured — RSpec, Capybara, Shoulda Matc
 - [ ] **Credentials**: Are API keys and sensitive information securely stored?
   > **Critical Failure**: `config/initializers/web_rake.rb` contains hardcoded plaintext credentials:
   > ```ruby
-  > config.username = 'Loveis1988'
-  > config.password = 'Loveis1988'
+  > config.username = '[REDACTED]'
+  > config.password = '[REDACTED]'
   > ```
   > This file is committed to version control. `.env` files are properly gitignored, but this initializer bypasses that protection entirely.
 

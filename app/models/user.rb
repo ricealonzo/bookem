@@ -40,4 +40,7 @@ class User < ApplicationRecord
 
   has_many :hostings, through: :locations, source: :bookings
 
+  def full_name
+    [ first_name, last_name ].compact_blank.join(" ")
+  end
 end

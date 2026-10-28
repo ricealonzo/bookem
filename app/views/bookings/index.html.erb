@@ -1,16 +1,39 @@
-
-
 <% content_for :title, "Bookings" %>
 
-<h1>Your Bookings</h1>
-<div id="bookings" class="row g-3">
-  <% @bookings.each do |booking| %>
-    <% if current_user.id == booking.guest_id || booking.location.host_id == current_user.id %>
-      <div class="col-12 col-md-6 col-lg-4">
-        <%= render booking %>
-      </div>
-    <% end %>
-  <% end %>
-</div>
+<h1>Bookings</h1>
 
-<%= link_to "Back to Locations", locations_path %>
+<section class="bookings-section">
+  <h2>Requests for your locations</h2>
+  <% if @requests.any? %>
+    <div id="booking_requests" class="row g-3">
+      <% @requests.each do |booking| %>
+        <div class="col-12 col-md-6 col-lg-4">
+          <%= render booking, show_link: true %>
+          <% if policy(booking).confirm? %>
+            <div class="booking-actions">
+              <%= button_to "Confirm", confirm_booking_path(booking), method: :patch %>
+              <%= button_to "Decline", decline_booking_path(booking), method: :patch, class: "secondary" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p>No one has requested your locations yet. <%= link_to "List a location", new_location_path %> to start hosting.</p>
+  <% end %>
+</section>
+
+<section class="bookings-section">
+  <h2>Your trips</h2>
+  <% if @trips.any? %>
+    <div id="bookings" class="row g-3">
+      <% @trips.each do |booking| %>
+        <div class="col-12 col-md-6 col-lg-4">
+          <%= render booking, show_link: true %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p>You haven't booked anything yet. <%= link_to "Browse locations", locations_path %>.</p>
+  <% end %>
+</section>

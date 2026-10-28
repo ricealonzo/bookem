@@ -3,7 +3,7 @@
   
   <% media = capture do %>
     <% if location.image? %>
-      <%= image_tag location.image.url, class: "card-img", alt: "Location photo" %>
+      <%= image_tag location.image.url, class: "card-img", alt: "Photo of #{location.name}" %>
     <% end %>
     <div class="card-img-overlay location-card-overlay">
       <h5 class="card-title mb-3" style="color: white;"><%= location.name %></h5>
@@ -27,7 +27,7 @@
         <li class="list-group-item"><span>City:</span> <%= location.city %></li>
         <li class="list-group-item"><span>State:</span> <%= location.state %></li>
         <li class="list-group-item"><span>Postal Code:</span> <%= location.postal_code %></li>
-        <li class="list-group-item"><span>Host:</span> <%= location.host.email %></li>
+        <li class="list-group-item"><span>Host:</span> <%= location.host.full_name.presence || "Bookem host" %></li>
       </ul>
       
       <div class="card-body">

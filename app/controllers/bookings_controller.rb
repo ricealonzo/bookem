@@ -1,33 +1,54 @@
 class BookingsController < ApplicationController
-  before_action :set_booking, only: %i[ show edit update destroy ]
   before_action :authenticate_user!
+  before_action :set_booking, only: %i[ show edit update confirm decline cancel ]
 
   # GET /bookings or /bookings.json
+  # The guest's own trips and the requests for locations they host.
   def index
-    @bookings = Booking.all
+    authorize Booking
+    bookings = policy_scope(Booking).includes(:guest, location: :host).chronological
+    @bookings = bookings
+    @trips = bookings.where(guest_id: current_user.id)
+    @requests = bookings.where(locations: { host_id: current_user.id })
   end
 
   # GET /bookings/1 or /bookings/1.json
   def show
+    authorize @booking
   end
 
-  # GET /bookings/new
+  # GET /bookings/new?location_id=1
   def new
-    @booking = Booking.new(location_id: params[:location_id]) 
+    location = Location.find_by(id: params[:location_id])
+    return redirect_to(locations_path, alert: "Choose a location to book.") unless location
+
+    @booking = Booking.new(location: location, guest: current_user)
+    authorize @booking
   end
 
   # GET /bookings/1/edit
   def edit
+    authorize @booking
   end
 
   # POST /bookings or /bookings.json
   def create
-    @booking = Booking.new(booking_params)
-    @booking.guest = current_user
+    location = Location.find_by(id: booking_params[:location_id])
+    @booking = Booking.new(
+      started_at: booking_params[:started_at],
+      ended_at: booking_params[:ended_at],
+      location: location,
+      guest: current_user
+    )
+    authorize @booking
+
+    # Lock the location row so two simultaneous requests can't both pass the
+    # overlap check and double-book the same time.
+    saved = location.with_lock { @booking.save }
 
     respond_to do |format|
-      if @booking.save
-        format.html { redirect_to @booking, notice: "Booking was successfully created." }
+      if saved
+        format.html { redirect_to @booking, notice: "Booking requested. The host will confirm or decline it." }
         format.json { render :show, status: :created, location: @booking }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,8 +59,12 @@ class BookingsController < ApplicationController
 
   # PATCH/PUT /bookings/1 or /bookings/1.json
   def update
+    authorize @booking
+    @booking.assign_attributes(started_at: booking_params[:started_at], ended_at: booking_params[:ended_at])
+    saved = @booking.location.with_lock { @booking.save }
+
     respond_to do |format|
-      if @booking.update(booking_params)
+      if saved
         format.html { redirect_to @booking, notice: "Booking was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @booking }
       else
@@ -49,24 +74,38 @@ class BookingsController < ApplicationController
     end
   end
 
-  # DELETE /bookings/1 or /bookings/1.json
-  def destroy
-    @booking.destroy!
+  # PATCH /bookings/1/confirm
+  def confirm
+    authorize @booking
+    change_status(notice: "Booking confirmed.") { @booking.location.with_lock { @booking.confirm! } }
+  end
 
-    respond_to do |format|
-      format.html { redirect_to bookings_path, notice: "Booking was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
-    end
+  # PATCH /bookings/1/decline
+  def decline
+    authorize @booking
+    change_status(notice: "Booking declined.") { @booking.decline! }
+  end
+
+  # PATCH /bookings/1/cancel
+  def cancel
+    authorize @booking
+    change_status(notice: "Booking cancelled.") { @booking.cancel! }
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_booking
-      @booking = Booking.find(params.expect(:id))
-    end
 
-    # Only allow a list of trusted parameters through.
-    def booking_params
-      params.expect(booking: [ :started_at, :ended_at, :guest_id, :location_id ])
-    end
+  def set_booking
+    @booking = Booking.find(params.expect(:id))
+  end
+
+  def booking_params
+    params.expect(booking: [ :started_at, :ended_at, :location_id ])
+  end
+
+  def change_status(notice:)
+    yield
+    redirect_to @booking, notice: notice, status: :see_other
+  rescue ActiveRecord::RecordInvalid, Booking::InvalidTransition => e
+    redirect_to @booking, alert: e.message, status: :see_other
+  end
 end

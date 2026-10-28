@@ -6,56 +6,129 @@ on:
     branches: [ main ]
 
 jobs:
-  # All jobs are currently disabled. Uncomment a job below to enable it.
-  placeholder:
-      runs-on: ubuntu-latest
-      steps:
-        - run: 'echo "CI jobs disabled"'
+  test:
+    runs-on: ubuntu-latest
 
-  # scan_ruby:
-  #   runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/bookem_test
 
-  #     - name: Set up Ruby
-  #       uses: ruby/setup-ruby@v1
-  #       with:
-  #         ruby-version: .ruby-version
-  #         bundler-cache: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Scan for common Rails security vulnerabilities using static analysis
-  #       run: bin/brakeman --no-pager
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
 
-  # scan_js:
-  #   runs-on: ubuntu-latest
+      - name: Set up database
+        run: bin/rails db:create db:schema:load
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+      - name: Run tests
+        run: bundle exec rspec --format documentation --format json --out tmp/rspec.json
 
-  #     - name: Set up Ruby
-  #       uses: ruby/setup-ruby@v1
-  #       with:
-  #         ruby-version: .ruby-version
-  #         bundler-cache: true
+      - name: Report test summary
+        if: always()
+        run: jq -r '"::notice::\(.summary_line)"' tmp/rspec.json || true
 
-  #     - name: Scan for security vulnerabilities in JavaScript dependencies
-  #       run: bin/importmap audit
+      - name: Report test failures
+        if: failure()
+        run: |
+          jq -r '.examples[] | select(.status == "failed")
+            | "::error file=\(.file_path | ltrimstr("./")),line=\(.line_number)::\(.full_description) -- \(.exception.class): \(.exception.message | gsub("\n"; " ") | .[0:600])"' tmp/rspec.json || true
+          jq -r '.messages[]? | "::error::\(gsub("\n"; " ") | .[0:900])"' tmp/rspec.json || true
 
-  # lint:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+  # Rehearses the production upgrade: builds the database as it was before
+  # the booking changes, adds bookings with text times, then runs the new
+  # migrations and checks the converted data.
+  migrations:
+    runs-on: ubuntu-latest
 
-  #     - name: Set up Ruby
-  #       uses: ruby/setup-ruby@v1
-  #       with:
-  #         ruby-version: .ruby-version
-  #         bundler-cache: true
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-  #     - name: Lint code for consistent style
-  #       run: bin/rubocop -f github
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/bookem_migrations
 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Build the old database
+        run: bin/rails db:create db:migrate VERSION=20260216000001
+
+      - name: Add bookings with text times
+        run: |
+          bin/rails runner 'ActiveRecord::Base.connection.execute("INSERT INTO bookings (started_at, ended_at, guest_id, location_id, created_at, updated_at) VALUES ($$2030-01-15T10:00$$, $$2030-01-15T12:00$$, 1, 1, NOW(), NOW()), ($$not a date$$, $$also not$$, 1, 1, NOW(), NOW())")'
+
+      - name: Run the new migrations
+        run: bin/rails db:migrate
+
+      - name: Check the converted bookings
+        run: bin/rails runner script/check_booking_migration.rb
+
+      - name: Report schema differences
+        if: always()
+        run: |
+          if ! git diff --quiet db/schema.rb; then
+            git diff db/schema.rb | head -40 | sed 's/^/::notice::schema diff: /'
+          fi
+
+  scan_ruby:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Scan for common Rails security vulnerabilities
+        # The Rails end-of-support notice is tracked separately (upgrade Rails);
+        # every other finding fails the build.
+        run: bundle exec brakeman --no-pager --except EOLRails --format json --output tmp/brakeman.json
+
+      - name: Report security warnings
+        if: failure()
+        run: |
+          jq -r '.warnings[] | "::warning file=\(.file),line=\(.line // 1)::\(.warning_type) [\(.check_name) \(.fingerprint)]: \(.message) (\(.confidence))"' tmp/brakeman.json || true
+          jq -r '.errors[]? | "::error::\(.error) \(.location // "")"' tmp/brakeman.json || true
+          jq -r '.obsolete[]? | "::error::Obsolete ignore entry \(.)"' tmp/brakeman.json || true

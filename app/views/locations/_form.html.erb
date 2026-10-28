@@ -10,15 +10,7 @@
       </ul>
     </div>
   <% end %>
-  <% if current_page?(controller: 'locations', action: 'new') %>
-
-      <h2>New Locations</h2>
-
-  <% else %>
-
-    <h2>Edit Locations</h2>
-
-  <% end %>
+  <h2><%= location.persisted? ? "Edit Location" : "New Location" %></h2>
 
   <div>
     <%= form.label :name, style: "display: block" %>
@@ -52,10 +44,8 @@
 
   <div>
     <%= form.label :image, style: "display: block" %>
-    <%= form.file_field :image %>
+    <%= form.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp" %>
   </div>
-
-  <%= form.hidden_field :host_id, value: current_user.id %>
 
   <div>
     <%= form.submit %>

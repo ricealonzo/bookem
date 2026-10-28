@@ -1,8 +1,17 @@
 Rails.application.routes.draw do
-  resources :locations
-  resources :bookings
- root to: "locations#index"
   devise_for :users
-  # This is a blank app! Pick your first screen, build out the RCAV, and go from there. E.g.:
-  # get("/your_first_screen", { :controller => "pages", :action => "first" })
+
+  resources :locations
+
+  # Bookings are never deleted: they're confirmed, declined or cancelled so
+  # both the guest and the host keep a record.
+  resources :bookings, except: :destroy do
+    member do
+      patch :confirm
+      patch :decline
+      patch :cancel
+    end
+  end
+
+  root to: "locations#index"
 end

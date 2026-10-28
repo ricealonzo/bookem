@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html data-theme="light">
   <head>
-    <title><%= content_for(:title) || "Capstone Bookem Project" %></title>
+    <title><%= content_for(:title) || "Bookem" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -56,15 +56,15 @@
                 <%= link_to "Locations", locations_path %>
               </li>
               <li>
-                <%= link_to "My Bookings", bookings_path %>
+                <%= link_to "Bookings", bookings_path %>
               </li>
              
               <li>
-                 <%= link_to "Create Location", new_location_path  %>
+                 <%= link_to "List a Location", new_location_path %>
               </li>
              
               <li>
-                <a href="/users/edit">Edit Profile</a>
+                <%= link_to "Edit Profile", edit_user_registration_path %>
               </li>
 
               <li>
@@ -79,10 +79,10 @@
           <% else %>
             <ul>
               <li>
-                <a href="/users/sign_in">Log In</a>
+                <%= link_to "Log In", new_user_session_path %>
               </li>
               <li>
-                <a href="/users/sign_up">Sign Up</a>
+                <%= link_to "Sign Up", new_user_registration_path %>
               </li>
               <li>
                 <button type="button" class="secondary" data-theme-toggle aria-pressed="false">
@@ -97,8 +97,12 @@
     
     <article>
       
-        <p class="notice"><%= notice %></p>
-        <p class="alert"><%= alert %></p>
+        <% if notice.present? %>
+          <p class="notice" role="status"><%= notice %></p>
+        <% end %>
+        <% if alert.present? %>
+          <p class="alert" role="alert"><%= alert %></p>
+        <% end %>
   
 
        <%= yield %>

@@ -1,6 +1,5 @@
 # A booking is private to its guest and the location's host.
-#   - Guests request bookings, can change the times while it's pending,
-#     and can cancel before it starts.
+#   - Guests request bookings and can cancel before they start.
 #   - Hosts confirm or decline pending requests, and can cancel before it starts.
 class BookingPolicy < ApplicationPolicy
   def index? = user.present?
@@ -10,7 +9,6 @@ class BookingPolicy < ApplicationPolicy
     user.present? && record.location.present? && record.location.host_id != user.id
   end
 
-  def update? = guest? && record.editable?
   def confirm? = host? && record.respondable?
   def decline? = host? && record.respondable?
   def cancel? = (guest? || host?) && record.cancellable?

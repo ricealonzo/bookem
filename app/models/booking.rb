@@ -41,7 +41,8 @@ class Booking < ApplicationRecord
   validates :ended_at, presence: true
   validate :ends_after_start
   validate :not_too_long
-  validate :starts_in_future, if: -> { started_at_changed? || ended_at_changed? }
+  validate :starts_in_future, if: :times_changed?
+  validate :within_opening_hours, if: :times_changed?
   validate :guest_is_not_host
   validate :no_overlap, if: :active?
 
@@ -60,10 +61,6 @@ class Booking < ApplicationRecord
 
   def cancellable?
     active? && upcoming?
-  end
-
-  def editable?
-    pending? && upcoming?
   end
 
   def respondable?
@@ -89,6 +86,19 @@ class Booking < ApplicationRecord
   end
 
   private
+
+  def times_changed?
+    new_record? || started_at_changed? || ended_at_changed?
+  end
+
+  # The host's hours and slot length decide which times can be booked.
+  def within_opening_hours
+    return if started_at.blank? || ended_at.blank? || location.blank? || ended_at <= started_at
+
+    problem = location.booking_hours_problem(started_at, ended_at)
+    errors.add(:base, "This time #{problem}") if problem&.start_with?("must")
+    errors.add(:base, problem) if problem && !problem.start_with?("must")
+  end
 
   def ends_after_start
     return if started_at.blank? || ended_at.blank?

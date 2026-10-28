@@ -9,10 +9,10 @@ Built with Ruby 3.4 and Rails 8.1, PostgreSQL, Devise, Pundit, Stimulus and Clou
 ## Features
 
 - **Browse locations** with photos, details and a map (Mapbox).
-- **Availability calendar** shows each month at a glance, with today ringed, past days hatched, and taken times labeled *Booked* or *Requested*. Clicking a day fills in the booking form. On phones, taken times appear as dots with a list below. The public never sees who booked.
-- **Request a booking** for a time range from the panel beside the location details.
+- **Host-set hours.** Each host chooses which days the location is open, the opening and closing times, and a slot length (30 minutes to 8 hours). Guests can only book inside those hours, in whole slots, and the server enforces it.
+- **Availability calendar and day view.** The month view shows how many slots are open each day, or *Booked up* or *Closed*. Choosing a day lists its time slots as Open, Requested, Booked or Past. Guests select a slot, or a run of back-to-back slots, and send the request from the same panel. Visitors can browse open times, and hosts see who booked each slot. The public never sees who booked.
 - **Host approval.** Requests start as *pending*. The host confirms or declines them from the Bookings page.
-- **Change or cancel.** Guests can change times while a request is pending, and either side can cancel before the booking starts. Bookings are never deleted.
+- **Cancel any time before it starts.** Either side can cancel. Bookings are never deleted, so both sides keep a record.
 - **One Bookings page:** requests waiting for your reply come first, with Confirm and Decline on each card, then your upcoming bookings, what's coming up at your locations, and a folded-away history.
 - **Light and dark themes**, keyboard-friendly, and laid out for phones.
 
@@ -21,7 +21,8 @@ Built with Ruby 3.4 and Rails 8.1, PostgreSQL, Devise, Pundit, Stimulus and Clou
 - Times are stored as real timestamps.
 - A location can't be double-booked. Pending and confirmed bookings hold their slot, and declined or cancelled ones free it again.
 - The overlap check runs while holding a database row lock on the location, so two people submitting at the same moment can't both get the same slot.
-- Bookings must be in the future, end after they start, last no more than 30 days, and hosts can't book their own location.
+- Bookings must be in the future, fall inside the host's hours on whole slots, and hosts can't book their own location.
+- Times are in Central Time.
 
 ## Security
 
@@ -77,7 +78,8 @@ If `CLOUDINARY_URL` isn't set, photos are saved to local disk. That's fine for d
 ![Entity relationship diagram](erd.png)
 
 - **User** — can host locations and book other people's locations.
-- **Location** — belongs to a host and has many bookings.
+- **Location** — belongs to a host, has a slot length, opening hours and many bookings.
+- **OpeningHour** — one open day of the week for a location, with opening and closing times.
 - **Booking** — belongs to a guest and a location, with a start, an end and a status (`pending`, `confirmed`, `declined` or `cancelled`).
 
 ## Deployment

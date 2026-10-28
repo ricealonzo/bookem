@@ -1,0 +1,53 @@
+<%# One day's time slots, shown when the day is chosen on the calendar. %>
+<% hours = location.hours_for(date) %>
+<% involved = ->(booking) { current_user && booking && (booking.guest_id == current_user.id || location.hosted_by?(current_user)) } %>
+<% state_labels = { open: "Open", requested: "Requested", booked: "Booked", past: "Past" } %>
+
+<section class="day-view" hidden
+         data-booking-picker-target="day"
+         data-date="<%= date.iso8601 %>"
+         data-label="<%= l(date, format: "%A, %B %-d") %>"
+         data-open-count="<%= schedule.count(&:open?) %>">
+  <h3><%= l(date, format: "%A, %B %-d") %></h3>
+
+  <% if hours.nil? %>
+    <p class="day-hours">Closed on <%= date.strftime("%A") %>s.</p>
+  <% else %>
+    <p class="day-hours">Open <%= hours_label(hours) %>, in <%= slot_length_label(location.slot_minutes) %> slots.</p>
+
+    <% if schedule.none? %>
+      <p class="day-hours">The open hours are shorter than one slot.</p>
+    <% else %>
+      <ul class="slot-list" aria-label="Time slots on <%= l(date, format: "%A, %B %-d") %>">
+        <% schedule.each_with_index do |slot, index| %>
+          <% time = "#{short_time(slot.starts_at)}–#{short_time(slot.ends_at)}" %>
+          <li>
+            <% if pickable && slot.open? %>
+              <button type="button" class="slot-option slot-open" data-index="<%= index %>"
+                      data-action="booking-picker#toggleSlot" data-booking-picker-target="slot"
+                      data-starts="<%= slot.starts_at.strftime("%Y-%m-%dT%H:%M") %>"
+                      data-ends="<%= slot.ends_at.strftime("%Y-%m-%dT%H:%M") %>"
+                      data-starts-label="<%= short_time(slot.starts_at) %>"
+                      data-ends-label="<%= short_time(slot.ends_at) %>"
+                      aria-pressed="false">
+                <span class="slot-time"><%= time %></span>
+                <span class="slot-state">Open</span>
+              </button>
+            <% else %>
+              <div class="slot-option slot-<%= slot.state %>" data-index="<%= index %>">
+                <span class="slot-time"><%= time %></span>
+                <span class="slot-state">
+                  <% if involved.call(slot.booking) %>
+                    <%= link_to "#{state_labels[slot.state]}: #{slot.booking.guest.first_name.presence || "Guest"}", slot.booking, data: { turbo_frame: "_top" } %>
+                  <% else %>
+                    <%= state_labels[slot.state] %>
+                  <% end %>
+                </span>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+</section>

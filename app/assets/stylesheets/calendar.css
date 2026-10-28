@@ -1,6 +1,6 @@
-/* Availability calendar on the location page. */
+/* Availability on the location page: month calendar and day view. */
 
-.availability { margin-bottom: 2rem; }
+.availability { margin-bottom: 2rem; scroll-margin-top: 1rem; }
 .availability-hint { color: var(--ink-soft); margin: -0.5rem 0 1rem; }
 
 .calendar-legend {
@@ -21,9 +21,17 @@
   height: 1rem;
   border-radius: 4px;
 }
-.swatch-confirmed { background: var(--awning-tint); box-shadow: inset 3px 0 0 var(--awning); }
-.swatch-pending   { background: var(--marigold-tint); box-shadow: inset 3px 0 0 var(--marigold); }
-.swatch-today     { background: var(--surface); box-shadow: inset 0 0 0 2px var(--awning); }
+.swatch-open    { background: var(--awning-tint); box-shadow: inset 3px 0 0 var(--awning); }
+.swatch-pending { background: var(--marigold-tint); box-shadow: inset 3px 0 0 var(--marigold); }
+.swatch-booked  { background: var(--closed); box-shadow: inset 0 0 0 1.5px var(--line); }
+.swatch-today   { background: var(--surface); box-shadow: inset 0 0 0 2px var(--awning); }
+
+.availability-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 2rem;
+  align-items: start;
+}
 
 /* ---------- Month heading and navigation ---------- */
 
@@ -64,9 +72,9 @@
 .calendar-grid {
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 6px;
-  margin: 0 -6px;
-  width: calc(100% + 12px);
+  border-spacing: 5px;
+  margin: 0 -5px;
+  width: calc(100% + 10px);
 }
 
 .calendar-grid th {
@@ -80,7 +88,7 @@
 
 .calendar-grid td {
   position: relative;
-  height: 6.75rem;
+  height: 5.25rem;
   vertical-align: top;
   padding: 0.4rem 0.45rem;
   background: var(--surface);
@@ -90,7 +98,7 @@
 
 /* Days from the neighboring months. */
 .calendar-grid td.prev-month,
-.calendar-grid td.next-month { opacity: 0.45; }
+.calendar-grid td.next-month { opacity: 0.5; }
 
 /* Days that have passed can't be booked. */
 .calendar-grid td.past {
@@ -99,20 +107,18 @@
     var(--closed);
   border-color: transparent;
 }
+.calendar-grid td.past .day-number { color: var(--ink-soft); font-weight: 500; }
 
 /* Weeks that are entirely in the past shrink, so upcoming days get the room. */
 .calendar-grid tr:not(:has(td:not(.past))) td { height: 2.6rem; }
-.calendar-grid td.past .day-number { color: var(--ink-soft); font-weight: 500; }
 
 .calendar-grid td.today { border: 2px solid var(--awning); }
-.calendar-grid td.today .day-number {
-  background: var(--awning);
-  color: var(--awning-ink);
-}
+.calendar-grid td.today .day-number { background: var(--awning); color: var(--awning-ink); }
 
 .calendar-grid td.is-selected {
   background: var(--awning-tint);
   border-color: var(--awning);
+  box-shadow: inset 0 0 0 1px var(--awning);
 }
 
 .day-number {
@@ -129,7 +135,7 @@
   pointer-events: none;
 }
 
-/* The whole day is a button that fills in the booking form. */
+/* The whole day is a button that opens its time slots. */
 .day-pick {
   position: absolute;
   inset: 0;
@@ -143,41 +149,19 @@
 .day-pick:hover { background: color-mix(in srgb, var(--awning-tint) 70%, transparent); }
 .day-pick:focus-visible { outline-offset: -3px; }
 
-/* ---------- Booked and requested times ---------- */
-
-.day-bookings {
+.day-status {
   position: relative;
   z-index: 1;
-  list-style: none;
-  margin: 0.3rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 3px;
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
   pointer-events: none;
 }
-
-.slot {
-  font-size: 0.75rem;
-  line-height: 1.25;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.slot a {
-  pointer-events: auto;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.3rem;
-  color: inherit;
-  text-decoration: none;
-}
-.slot a:hover .slot-who { text-decoration: underline; }
-.slot-who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
-
-.slot-confirmed { background: var(--awning-tint); color: var(--ink); box-shadow: inset 3px 0 0 var(--awning); }
-.slot-pending   { background: var(--marigold-tint); color: var(--marigold-ink); box-shadow: inset 3px 0 0 var(--marigold); }
+.day-open   { color: var(--awning); }
+.day-full   { color: var(--marigold-ink); }
+.day-closed { color: var(--ink-soft); font-weight: 500; }
 
 /* Month change slide (triggered by the previous/next buttons). */
 .simple-calendar.calendar-slide-left { animation: calendar-slide-left 220ms ease-out; }
@@ -185,29 +169,92 @@
 @keyframes calendar-slide-left { from { transform: translateX(14px); opacity: 0.6; } to { transform: none; opacity: 1; } }
 @keyframes calendar-slide-right { from { transform: translateX(-14px); opacity: 0.6; } to { transform: none; opacity: 1; } }
 
-/* ---------- List of taken times (shown on phones) ---------- */
+/* ---------- Day view ---------- */
 
-.agenda { display: none; margin-top: 1.25rem; }
-.agenda h3 { font-size: 1.1rem; }
-.agenda ul { list-style: none; padding: 0; margin: 0; }
-.agenda-item {
+.day-panel {
+  position: sticky;
+  top: 1rem;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.1rem 1.2rem;
+}
+
+.day-placeholder { color: var(--ink-soft); margin: 0; }
+.day-view[hidden], .day-placeholder[hidden] { display: none; }
+
+.day-view h3 { font-size: 1.3rem; margin-bottom: 0.2rem; }
+.day-hours { color: var(--ink-soft); font-size: 0.925rem; margin-bottom: 0.85rem; }
+
+.slot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 26rem;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.slot-option {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--line);
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-small);
+  border: 1.5px solid transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  color: var(--ink);
 }
-.agenda-when { font-weight: 500; }
-.agenda-status {
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
+.slot-time { font-weight: 700; }
+.slot-state { font-size: 0.85rem; }
+.slot-state a { color: inherit; font-weight: 700; }
+
+button.slot-open {
+  background: var(--awning-tint);
+  border-color: color-mix(in srgb, var(--awning) 35%, transparent);
+  cursor: pointer;
 }
-.agenda-confirmed .agenda-status { background: var(--awning-tint); color: var(--ink); }
-.agenda-pending .agenda-status { background: var(--marigold-tint); color: var(--marigold-ink); }
-.agenda p { color: var(--ink-soft); }
+button.slot-open:hover { border-color: var(--awning); }
+button.slot-open .slot-state { color: var(--awning); font-weight: 700; }
+
+button.slot-open.is-selected {
+  background: var(--awning);
+  border-color: var(--awning);
+  color: var(--awning-ink);
+}
+button.slot-open.is-selected .slot-state { color: var(--awning-ink); }
+
+div.slot-open      { background: var(--awning-tint); }
+.slot-requested    { background: var(--marigold-tint); color: var(--marigold-ink); }
+.slot-booked       { background: var(--closed); color: var(--ink-soft); border-color: var(--line); }
+.slot-past         { color: var(--ink-soft); opacity: 0.6; }
+.slot-past .slot-time { font-weight: 500; }
+
+.slot-request {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.selection-summary { color: var(--ink-soft); margin-bottom: 0.75rem; }
+.selection-summary.has-selection { color: var(--ink); font-weight: 700; }
+.slot-request input[type="submit"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.slot-request .form-hint { margin-top: 0.75rem; }
+.day-panel-note { border-top: 1px solid var(--line); padding-top: 1rem; margin: 0; }
+
+@media (max-width: 860px) {
+  .availability-layout { grid-template-columns: 1fr; }
+  .day-panel { position: static; }
+  .day-view { scroll-margin-top: 1rem; }
+  .slot-list { max-height: none; }
+}
 
 @media (max-width: 720px) {
   .calendar-grid { border-spacing: 3px; margin: 0 -3px; width: calc(100% + 6px); }
@@ -216,13 +263,10 @@
   .calendar-grid tr:not(:has(td:not(.past))) td { height: 2.4rem; }
   .day-number { min-width: 1.5rem; height: 1.5rem; font-size: 0.85rem; }
 
-  /* Times become dots; the list below the calendar has the details. */
-  .day-bookings { display: flex; justify-content: center; flex-wrap: wrap; gap: 3px; margin-top: 0.15rem; }
-  .slot { width: 7px; height: 7px; padding: 0; border-radius: 50%; font-size: 0; box-shadow: none; }
-  .slot a { display: none; }
-  .slot-confirmed { background: var(--awning); }
-  .slot-pending { background: var(--marigold); }
-
-  .agenda { display: block; }
+  /* On phones the day's status becomes a colored dot. */
+  .day-status { font-size: 0; margin: 0.2rem auto 0; width: 7px; height: 7px; border-radius: 50%; }
+  .day-open { background: var(--awning); }
+  .day-full { background: var(--marigold); }
+  .day-closed { background: transparent; }
   .calendar-nav-today { padding: 0 0.75rem; }
 }

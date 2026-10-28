@@ -46,10 +46,21 @@ for (const [label, viewport] of Object.entries(sizes)) {
 
       await logIn(page, "guest1@example.com")
       await page.goto(`${base}${firstLocation}`)
-      const day = page.locator(".day-pick").nth(3)
-      if (await day.count()) await day.click()
-      await page.waitForTimeout(600)
+      // Pick a day with open slots, then select two back-to-back slots.
+      const days = page.locator(".day-pick")
+      for (let i = 0; i < Math.min(await days.count(), 10); i++) {
+        await days.nth(i).click()
+        const open = page.locator(".day-view:not([hidden]) button.slot-open")
+        if (await open.count() >= 3) {
+          await open.nth(1).click()
+          await open.nth(2).click()
+          break
+        }
+      }
+      await page.waitForTimeout(400)
       await shoot(page, `location-guest-${suffix}`)
+      await page.locator("#availability").screenshot({ path: `${out}/availability-guest-${suffix}.png` })
+      console.log(`saved availability-guest-${suffix}`)
 
       await page.goto(`${base}/bookings`)
       await shoot(page, `bookings-guest-${suffix}`)
@@ -57,10 +68,24 @@ for (const [label, viewport] of Object.entries(sizes)) {
       await page.goto(`${base}/locations/new`)
       await shoot(page, `new-location-${suffix}`)
 
+      // Submit the slot request and show the result.
+      await page.goto(`${base}${firstLocation}`)
+      const pickable = page.locator(".day-view:not([hidden]) button.slot-open")
+      if (await pickable.count()) {
+        await pickable.first().click()
+        await Promise.all([page.waitForNavigation(), page.click(".slot-request input[type=submit]")])
+        await shoot(page, `booking-requested-${suffix}`, false)
+      }
+
       await context.clearCookies()
       await logIn(page, process.env.HOST_EMAIL || "host1@example.com")
       await page.goto(`${base}/bookings`)
       await shoot(page, `bookings-host-${suffix}`)
+
+      if (process.env.HOST_LOCATION) {
+        await page.goto(`${base}/locations/${process.env.HOST_LOCATION}/edit`)
+        await shoot(page, `edit-hours-${suffix}`)
+      }
     }
 
     await context.close()

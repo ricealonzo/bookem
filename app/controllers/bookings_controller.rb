@@ -1,6 +1,6 @@
 class BookingsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_booking, only: %i[ show edit update confirm decline cancel ]
+  before_action :set_booking, only: %i[ show confirm decline cancel ]
 
   # GET /bookings or /bookings.json
   # The guest's own trips and the requests for locations they host.
@@ -29,17 +29,12 @@ class BookingsController < ApplicationController
   end
 
   # GET /bookings/new?location_id=1
+  # Booking happens on the location page, by picking slots in the day view.
   def new
     location = Location.find_by(id: params[:location_id])
     return redirect_to(locations_path, alert: "Choose a location to book.") unless location
 
-    @booking = Booking.new(location: location, guest: current_user)
-    authorize @booking
-  end
-
-  # GET /bookings/1/edit
-  def edit
-    authorize @booking
+    redirect_to location_path(location, anchor: "availability")
   end
 
   # POST /bookings or /bookings.json
@@ -62,24 +57,10 @@ class BookingsController < ApplicationController
         format.html { redirect_to @booking, notice: "Booking requested. The host will confirm or decline it." }
         format.json { render :show, status: :created, location: @booking }
       else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @booking.errors, status: :unprocessable_entity }
-      end
-    end
-  end
-
-  # PATCH/PUT /bookings/1 or /bookings/1.json
-  def update
-    authorize @booking
-    @booking.assign_attributes(started_at: booking_params[:started_at], ended_at: booking_params[:ended_at])
-    saved = @booking.location.with_lock { @booking.save }
-
-    respond_to do |format|
-      if saved
-        format.html { redirect_to @booking, notice: "Booking was successfully updated.", status: :see_other }
-        format.json { render :show, status: :ok, location: @booking }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
+        format.html do
+          redirect_to location_path(location, start_date: @booking.started_at&.to_date, date: @booking.started_at&.to_date, anchor: "availability"),
+                      alert: "That time couldn't be booked: #{@booking.errors.full_messages.to_sentence}"
+        end
         format.json { render json: @booking.errors, status: :unprocessable_entity }
       end
     end

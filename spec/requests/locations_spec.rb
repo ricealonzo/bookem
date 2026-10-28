@@ -72,4 +72,31 @@ RSpec.describe "Locations", type: :request do
     expect(response.body).not_to include("Secretname")
     expect(response.body).not_to include(guest.email)
   end
+
+  describe "opening hours" do
+    it "lets the host set hours and slot length" do
+      sign_in host
+      patch location_path(location), params: {
+        location: {
+          slot_minutes: 120,
+          weekly_hours: {
+            "1" => { open: "1", opens_at: "08:00", closes_at: "12:00" },
+            "2" => { open: "0", opens_at: "09:00", closes_at: "17:00" }
+          }
+        }
+      }
+
+      location.reload
+      expect(location.slot_minutes).to eq(120)
+      expect(location.opening_hours.map(&:weekday)).to eq([ 1 ])
+      expect(location.opening_hours.first.opens_at_minute).to eq(480)
+    end
+
+    it "shows the hours on the location page" do
+      location.update!(weekly_hours: all_week_hours(opens: "09:00", closes: "17:00", days: 1..5))
+      get location_path(location)
+      expect(response.body).to include("Monday to Friday")
+      expect(response.body).to include("9 AM to 5 PM")
+    end
+  end
 end

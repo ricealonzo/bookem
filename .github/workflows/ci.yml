@@ -75,6 +75,6 @@ jobs:
       - name: Report security warnings
         if: failure()
         run: |
-          jq -r '.warnings[] | "::warning file=\(.file),line=\(.line // 1)::\(.warning_type): \(.message) (\(.confidence))"' tmp/brakeman.json || true
+          jq -r '.warnings[] | "::warning file=\(.file),line=\(.line // 1)::\(.warning_type) [\(.check_name) \(.fingerprint)]: \(.message) (\(.confidence))"' tmp/brakeman.json || true
           jq -r '.errors[]? | "::error::\(.error) \(.location // "")"' tmp/brakeman.json || true
           jq -r '.obsolete[]? | "::error::Obsolete ignore entry \(.)"' tmp/brakeman.json || true

@@ -7,6 +7,7 @@ class BookingsController < ApplicationController
   def index
     authorize Booking
     bookings = policy_scope(Booking).includes(:guest, location: :host).chronological
+    @bookings = bookings
     @trips = bookings.where(guest_id: current_user.id)
     @requests = bookings.where(locations: { host_id: current_user.id })
   end

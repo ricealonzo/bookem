@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_28_120100) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_28_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -37,7 +37,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120100) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "image"
+    t.integer "slot_minutes", default: 60, null: false
     t.index ["host_id"], name: "index_locations_on_host_id"
+  end
+
+  create_table "opening_hours", force: :cascade do |t|
+    t.bigint "location_id", null: false
+    t.integer "weekday", null: false
+    t.integer "opens_at_minute", null: false
+    t.integer "closes_at_minute", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["location_id", "weekday"], name: "index_opening_hours_on_location_id_and_weekday", unique: true
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|
@@ -201,6 +212,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120100) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "opening_hours", "locations", on_delete: :cascade
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

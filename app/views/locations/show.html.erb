@@ -1,6 +1,6 @@
 <% content_for :title, @location.name %>
 
-<article class="location-page" data-controller="booking-picker">
+<article class="location-page">
   <header class="location-header">
     <h1><%= @location.name %></h1>
     <p class="location-place"><%= @location.full_address %></p>
@@ -41,19 +41,27 @@
       </div>
     </section>
 
-    <aside class="booking-panel" data-booking-picker-target="panel">
-      <% if current_user.nil? %>
-        <h2>Book this space</h2>
-        <p>
-          <%= link_to "Log in", new_user_session_path %> or <%= link_to "sign up", new_user_registration_path %>
-          to request a booking.
-        </p>
-      <% elsif @location.hosted_by?(current_user) %>
-        <h2>Your Location</h2>
+    <aside class="booking-panel">
+      <h2><%= @location.hosted_by?(current_user) ? "Your Location" : "Book this space" %></h2>
+      <p class="panel-note">Booked in <%= slot_length_adjective(@location.slot_minutes) %> slots. Times are Central Time.</p>
+
+      <table class="hours-summary">
+        <caption class="visually-hidden">Opening hours</caption>
+        <tbody>
+          <% weekly_hours_summary(@location).each do |days, hours| %>
+            <tr class="<%= "is-closed" if hours == "Closed" %>">
+              <th scope="row"><%= days %></th>
+              <td><%= hours %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% if @location.hosted_by?(current_user) %>
         <p>Guests' requests show up on your <%= link_to "Bookings", bookings_path %> page, where you can confirm or decline them.</p>
         <div class="panel-actions">
           <% if policy(@location).update? %>
-            <%= link_to "Edit location", edit_location_path(@location), class: "button button-quiet" %>
+            <%= link_to "Edit location and hours", edit_location_path(@location), class: "button button-quiet" %>
           <% end %>
           <% if policy(@location).destroy? %>
             <%= button_to "Delete location", @location, method: :delete, class: "button button-danger",
@@ -61,71 +69,75 @@
           <% end %>
         </div>
       <% else %>
-        <%= render "bookings/form", booking: @booking %>
+        <a class="button button-wide" href="#availability">See open times</a>
       <% end %>
     </aside>
   </div>
 
-  <section class="availability" aria-labelledby="availability-heading">
+  <section id="availability" class="availability" aria-labelledby="availability-heading">
     <div class="section-heading">
       <h2 id="availability-heading">Availability</h2>
       <ul class="calendar-legend" aria-label="Legend">
-        <li><span class="swatch swatch-confirmed"></span> Booked</li>
+        <li><span class="swatch swatch-open"></span> Open</li>
         <li><span class="swatch swatch-pending"></span> Requested</li>
+        <li><span class="swatch swatch-booked"></span> Booked</li>
         <li><span class="swatch swatch-today"></span> Today</li>
       </ul>
     </div>
-    <% if current_user && !@location.hosted_by?(current_user) %>
-      <p class="availability-hint">Choose a day to fill in the booking form. Pick a time that doesn't overlap the ones shown.</p>
-    <% end %>
+    <p class="availability-hint">Choose a day to see its time slots.<% if current_user && !@location.hosted_by?(current_user) %> Select a slot, or a run of slots, then send your request.<% end %></p>
 
     <%= turbo_frame_tag "bookings_calendar" do %>
       <% pickable = current_user.present? && !@location.hosted_by?(current_user) %>
-      <%= month_calendar(events: @bookings, attribute: :started_at, end_attribute: :ended_at) do |date, bookings| %>
-        <% day_bookings = bookings_on(date, bookings) %>
-        <% if pickable && date >= Date.current %>
-          <button type="button" class="day-pick" data-action="booking-picker#pick"
-                  data-booking-picker-date-param="<%= date.iso8601 %>"
-                  aria-label="Request a time on <%= l(date, format: :long) %>"></button>
-        <% end %>
-        <span class="day-number"><%= date.day %></span>
-        <% if day_bookings.any? %>
-          <ul class="day-bookings">
-            <% day_bookings.each do |booking| %>
-              <% involved = current_user && (booking.guest_id == current_user.id || @location.hosted_by?(current_user)) %>
-              <li class="slot slot-<%= booking.status %>">
-                <% label = booking_time_label(booking, date) %>
-                <% if involved %>
-                  <%= link_to booking, data: { turbo_frame: "_top" }, title: "#{booking.guest.full_name}: #{label}" do %>
-                    <span class="slot-time"><%= label %></span>
-                    <span class="slot-who"><%= booking.guest.first_name.presence || "Guest" %></span>
-                  <% end %>
-                <% else %>
-                  <span class="slot-time"><%= label %></span>
-                  <span class="visually-hidden"><%= booking.confirmed? ? "Booked" : "Requested" %></span>
-                <% end %>
-              </li>
-            <% end %>
-          </ul>
-        <% end %>
-      <% end %>
-
       <% month_start = calendar_month_start(params[:start_date]) %>
-      <% month_bookings = bookings_in_month(@bookings, month_start) %>
-      <div class="agenda">
-        <h3>Taken times in <%= l(month_start, format: "%B") %></h3>
-        <% if month_bookings.any? %>
-          <ul>
-            <% month_bookings.each do |booking| %>
-              <li class="agenda-item agenda-<%= booking.status %>">
-                <span class="agenda-when"><%= booking_range_label(booking) %></span>
-                <span class="agenda-status"><%= booking.confirmed? ? "Booked" : "Requested" %></span>
-              </li>
+      <% visible_days = (month_start.beginning_of_week..month_start.end_of_month.end_of_week) %>
+      <% schedules = visible_days.select { |d| d >= Date.current }.index_with { |d| @location.schedule_for(d, @bookings) } %>
+
+      <div class="availability-layout" data-controller="booking-picker"
+           data-booking-picker-selected-date-value="<%= @selected_date&.iso8601 %>">
+        <div class="availability-calendar">
+          <%= month_calendar(events: @bookings, attribute: :started_at, end_attribute: :ended_at) do |date, _bookings| %>
+            <% schedule = schedules[date] %>
+            <% if schedule %>
+              <button type="button" class="day-pick" data-action="booking-picker#showDay"
+                      data-booking-picker-date-param="<%= date.iso8601 %>"
+                      aria-label="See time slots on <%= l(date, format: "%A, %B %-d") %>"></button>
             <% end %>
-          </ul>
-        <% else %>
-          <p>Nothing booked this month, so every time is open.</p>
-        <% end %>
+            <span class="day-number"><%= date.day %></span>
+            <% if schedule %>
+              <% open_count = schedule.count(&:open?) %>
+              <% if @location.hours_for(date).nil? %>
+                <span class="day-status day-closed">Closed</span>
+              <% elsif open_count.positive? %>
+                <span class="day-status day-open"><%= open_count %> open</span>
+              <% elsif schedule.any? { |slot| %i[booked requested].include?(slot.state) } %>
+                <span class="day-status day-full">Booked up</span>
+              <% else %>
+                <span class="day-status day-closed">Done for today</span>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+
+        <aside class="day-panel" aria-live="polite">
+          <p class="day-placeholder" data-booking-picker-target="placeholder">Choose a day on the calendar to see its time slots.</p>
+
+          <% schedules.each do |date, schedule| %>
+            <%= render "locations/day_view", location: @location, date: date, schedule: schedule, pickable: pickable %>
+          <% end %>
+
+          <% if pickable %>
+            <%= form_with url: bookings_path, scope: :booking, class: "slot-request", data: { turbo: false } do |form| %>
+              <%= form.hidden_field :location_id, value: @location.id %>
+              <%= form.hidden_field :started_at, data: { booking_picker_target: "startInput" } %>
+              <%= form.hidden_field :ended_at, data: { booking_picker_target: "endInput" } %>
+              <p class="selection-summary" data-booking-picker-target="summary">No time selected yet.</p>
+              <%= form.submit "Request Booking", class: "button button-wide", disabled: true, data: { booking_picker_target: "submit" } %>
+              <p class="form-hint">The host confirms or declines your request. You can cancel any time before it starts.</p>
+            <% end %>
+          <% elsif current_user.nil? %>
+            <p class="day-panel-note"><%= link_to "Log in", new_user_session_path %> or <%= link_to "sign up", new_user_registration_path %> to request a booking.</p>
+          <% end %>
+        </aside>
       </div>
     <% end %>
   </section>

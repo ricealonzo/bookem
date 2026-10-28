@@ -322,3 +322,58 @@
   .location-layout { grid-template-columns: 1fr; grid-template-areas: "main" "panel" "map"; }
   .booking-panel { position: static; margin-bottom: 2rem; }
 }
+
+/* ---------- Opening hours ---------- */
+
+.panel-note { color: var(--ink-soft); font-size: 0.925rem; margin-bottom: 0.75rem; }
+
+.hours-summary {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.1rem;
+  font-size: 0.95rem;
+}
+.hours-summary th,
+.hours-summary td {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.hours-summary th { font-weight: 700; padding-right: 1rem; text-align: left; }
+.hours-summary td { text-align: right; }
+.hours-summary tr.is-closed td,
+.hours-summary tr.is-closed th { color: var(--ink-soft); font-weight: 500; }
+
+.hours-editor > .field-hint { margin-bottom: 1rem; }
+.hours-editor .field { max-width: 14rem; }
+
+.hours-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.25rem;
+}
+.hours-table th,
+.hours-table td {
+  padding: 0.35rem 0.4rem 0.35rem 0;
+  text-align: left;
+  vertical-align: middle;
+}
+.hours-table thead th { font-size: 0.85rem; color: var(--ink-soft); }
+.hours-table tbody th { font-weight: 700; white-space: nowrap; }
+.hours-table tbody th label { margin: 0; font-weight: 700; }
+.hours-table input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--awning); }
+.hours-table input[type="time"] {
+  width: 100%;
+  min-width: 6.5rem;
+  padding: 0.45rem 0.5rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.hours-table tr:has(input[type="checkbox"]:not(:checked)) input[type="time"] { opacity: 0.4; }
+
+select {
+  appearance: auto;
+}

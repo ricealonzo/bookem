@@ -48,5 +48,49 @@
     <p class="field-hint">JPG, PNG, GIF or WebP. A wide photo of the space works best.</p>
   </div>
 
+  <fieldset class="form-group hours-editor">
+    <legend>When guests can book</legend>
+    <p class="field-hint">Guests can only request times inside these hours, in whole slots. Times are Central Time.</p>
+
+    <div class="field">
+      <%= form.label :slot_minutes, "Slot length" %>
+      <%= form.select :slot_minutes, slot_length_options, {}, class: "slot-length-select" %>
+    </div>
+
+    <table class="hours-table">
+      <thead>
+        <tr>
+          <th scope="col">Day</th>
+          <th scope="col">Open</th>
+          <th scope="col">From</th>
+          <th scope="col">Until</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% [1, 2, 3, 4, 5, 6, 0].each do |weekday| %>
+          <% hours = location.opening_hours.detect { |h| h.weekday == weekday && !h.marked_for_destruction? } %>
+          <% field = "location[weekly_hours][#{weekday}]" %>
+          <% id = "hours_#{weekday}" %>
+          <tr>
+            <th scope="row"><label for="<%= id %>_open"><%= Date::DAYNAMES[weekday] %></label></th>
+            <td>
+              <input type="hidden" name="<%= field %>[open]" value="0">
+              <input type="checkbox" id="<%= id %>_open" name="<%= field %>[open]" value="1" <%= "checked" if hours %>>
+            </td>
+            <td>
+              <input type="time" id="<%= id %>_opens_at" name="<%= field %>[opens_at]" step="900"
+                     value="<%= hours ? hours.opens_at_text : "09:00" %>" aria-label="<%= Date::DAYNAMES[weekday] %> opening time">
+            </td>
+            <td>
+              <input type="time" id="<%= id %>_closes_at" name="<%= field %>[closes_at]" step="900"
+                     value="<%= hours ? hours.closes_at_text : "17:00" %>" aria-label="<%= Date::DAYNAMES[weekday] %> closing time">
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <p class="field-hint">Set "Until" to 12:00 AM to stay open until midnight.</p>
+  </fieldset>
+
   <%= form.submit location.persisted? ? "Save Changes" : "List This Space", class: "button" %>
 <% end %>

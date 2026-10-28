@@ -33,14 +33,33 @@ RSpec.describe "Bookings", type: :request do
       expect(Booking.last.guest).to eq(guest)
     end
 
-    it "refuses a time that's already booked" do
+    it "refuses a time that's already booked and says why" do
       create_booking(location: location, guest: stranger, starts: start, hours: 3)
       sign_in guest
 
       expect { post bookings_path, params: booking_params(starts: start + 1.hour, ends: start + 2.hours) }
         .not_to change(Booking, :count)
-      expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include("overlaps another booking")
+      expect(response).to redirect_to(location_path(location, start_date: start.to_date, date: start.to_date, anchor: "availability"))
+      expect(flash[:alert]).to include("overlaps another booking")
+    end
+
+    it "refuses times outside the host's hours or off the slots" do
+      location.update!(slot_minutes: 60, weekly_hours: all_week_hours(opens: "09:00", closes: "17:00"))
+      sign_in guest
+
+      expect { post bookings_path, params: booking_params(starts: start.change(hour: 18), ends: start.change(hour: 19)) }
+        .not_to change(Booking, :count)
+      expect(flash[:alert]).to include("within opening hours")
+
+      expect { post bookings_path, params: booking_params(starts: start.change(hour: 9, min: 30), ends: start.change(hour: 10, min: 30)) }
+        .not_to change(Booking, :count)
+      expect(flash[:alert]).to include("60-minute slots")
+    end
+
+    it "sends people to the location's day view to book" do
+      sign_in guest
+      get new_booking_path(location_id: location.id)
+      expect(response).to redirect_to(location_path(location, anchor: "availability"))
     end
 
     it "doesn't let hosts book their own location" do
@@ -105,27 +124,8 @@ RSpec.describe "Bookings", type: :request do
     end
   end
 
-  describe "changing and cancelling" do
+  describe "cancelling" do
     let!(:booking) { create_booking(location: location, guest: guest, starts: start) }
-
-    it "lets the guest change times while pending" do
-      sign_in guest
-      patch booking_path(booking), params: booking_params(starts: start + 1.day, ends: start + 1.day + 1.hour)
-      expect(booking.reload.started_at).to be_within(1.minute).of(start + 1.day)
-    end
-
-    it "doesn't let the guest move the booking to another location" do
-      other = create_location
-      sign_in guest
-      patch booking_path(booking), params: { booking: { location_id: other.id } }
-      expect(booking.reload.location).to eq(location)
-    end
-
-    it "doesn't let the host change the guest's times" do
-      sign_in host
-      patch booking_path(booking), params: booking_params(starts: start + 1.day, ends: start + 1.day + 1.hour)
-      expect(booking.reload.started_at).to be_within(1.minute).of(start)
-    end
 
     it "lets the guest cancel" do
       sign_in guest

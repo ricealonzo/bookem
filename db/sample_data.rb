@@ -12,7 +12,9 @@ module SampleData
       city: "San Francisco",
       state: "CA",
       postal_code: "94114",
-      image_file: "studio.jpg"
+      image_file: "studio.jpg",
+      slot_minutes: 120,
+      hours: { days: 1..6, opens: "09:00", closes: "21:00" }
     },
     {
       name: "Downtown Event Loft",
@@ -21,7 +23,9 @@ module SampleData
       city: "Chicago",
       state: "IL",
       postal_code: "60607",
-      image_file: "event_space.jpg"
+      image_file: "event_space.jpg",
+      slot_minutes: 240,
+      hours: { days: [ 4, 5, 6, 0 ], opens: "10:00", closes: "22:00" }
     },
     {
       name: "Riverside Barbershop",
@@ -30,7 +34,9 @@ module SampleData
       city: "Austin",
       state: "TX",
       postal_code: "78704",
-      image_file: "barbershop.jpg"
+      image_file: "barbershop.jpg",
+      slot_minutes: 30,
+      hours: { days: 2..6, opens: "09:00", closes: "18:00" }
     },
     {
       name: "Sunset Beauty Salon",
@@ -39,7 +45,9 @@ module SampleData
       city: "San Francisco",
       state: "CA",
       postal_code: "94112",
-      image_file: "salon.jpg"
+      image_file: "salon.jpg",
+      slot_minutes: 60,
+      hours: { days: 2..6, opens: "10:00", closes: "19:00" }
     },
     {
       name: "Brickhouse Photo Studio",
@@ -48,7 +56,9 @@ module SampleData
       city: "Los Angeles",
       state: "CA",
       postal_code: "90021",
-      image_file: "photo_studio.jpg"
+      image_file: "photo_studio.jpg",
+      slot_minutes: 120,
+      hours: { days: 1..5, opens: "08:00", closes: "20:00" }
     },
     {
       name: "Greenline Wellness Studio",
@@ -57,9 +67,18 @@ module SampleData
       city: "Denver",
       state: "CO",
       postal_code: "80212",
-      image_file: "wellness.jpg"
+      image_file: "wellness.jpg",
+      slot_minutes: 60,
+      hours: { days: 0..6, opens: "07:00", closes: "21:00" }
     }
   ].freeze
+
+  # { days: 1..5, opens: "09:00", closes: "17:00" } as the location form sends it.
+  def self.weekly_hours(hours)
+    hours[:days].to_a.to_h do |weekday|
+      [ weekday.to_s, { "open" => "1", "opens_at" => hours[:opens], "closes_at" => hours[:closes] } ]
+    end
+  end
 
   def self.sample_image_path(filename)
     Rails.root.join("db", "sample_images", filename)
@@ -113,22 +132,27 @@ module SampleData
         state: location[:state],
         postal_code: location[:postal_code],
         image: sample_image_file(location[:image_file]),
+        slot_minutes: location[:slot_minutes],
+        weekly_hours: weekly_hours(location[:hours]),
         host: hosts.sample
       )
     end
 
-    # Random future bookings. Ones that clash with an earlier booking for the
-    # same location are skipped, since the app doesn't allow double-booking.
+    # Random future bookings of one to three slots. Ones that clash with an
+    # earlier booking are skipped, since the app doesn't allow double-booking.
     BOOKING_COUNT.times do
       location = locations.sample
-      starts = Faker::Time.between(from: 1.day.from_now, to: 60.days.from_now).beginning_of_hour
-      ends = starts + rand(1..8).hours
+      slots = location.slots_for(Date.current + rand(1..45))
+      next if slots.empty?
+
+      first = rand(slots.size)
+      last = [ first + rand(0..2), slots.size - 1 ].min
 
       Booking.new(
         location: location,
         guest: guests.sample,
-        started_at: starts,
-        ended_at: ends,
+        started_at: slots[first].starts_at,
+        ended_at: slots[last].ends_at,
         status: %w[pending confirmed confirmed].sample
       ).save
     end

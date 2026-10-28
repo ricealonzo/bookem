@@ -5,7 +5,7 @@ Rails.application.routes.draw do
 
   # Bookings are never deleted: they're confirmed, declined or cancelled so
   # both the guest and the host keep a record.
-  resources :bookings, except: :destroy do
+  resources :bookings, only: %i[ index show new create ] do
     member do
       patch :confirm
       patch :decline

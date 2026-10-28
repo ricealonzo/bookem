@@ -117,18 +117,20 @@ module SampleData
       )
     end
 
+    # Random future bookings. Ones that clash with an earlier booking for the
+    # same location are skipped, since the app doesn't allow double-booking.
     BOOKING_COUNT.times do
       location = locations.sample
-      guest = guests.sample
-      start_date = Faker::Date.forward(days: 60)
-      end_date = start_date + rand(1..7)
+      starts = Faker::Time.between(from: 1.day.from_now, to: 60.days.from_now).beginning_of_hour
+      ends = starts + rand(1..8).hours
 
-      Booking.create!(
+      Booking.new(
         location: location,
-        guest: guest,
-        started_at: start_date.to_s,
-        ended_at: end_date.to_s
-      )
+        guest: guests.sample,
+        started_at: starts,
+        ended_at: ends,
+        status: %w[pending confirmed confirmed].sample
+      ).save
     end
   end
 end

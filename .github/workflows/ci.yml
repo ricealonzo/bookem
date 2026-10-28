@@ -41,7 +41,14 @@ jobs:
         run: bin/rails db:create db:schema:load
 
       - name: Run tests
-        run: bundle exec rspec --format documentation
+        run: bundle exec rspec --format documentation --format json --out tmp/rspec.json
+
+      - name: Report test failures
+        if: failure()
+        run: |
+          jq -r '.examples[] | select(.status == "failed")
+            | "::error file=\(.file_path | ltrimstr("./")),line=\(.line_number)::\(.full_description) -- \(.exception.class): \(.exception.message | gsub("\n"; " ") | .[0:600])"' tmp/rspec.json || true
+          jq -r '.messages[]? | "::error::\(gsub("\n"; " ") | .[0:900])"' tmp/rspec.json || true
 
   scan_ruby:
     runs-on: ubuntu-latest
@@ -57,4 +64,11 @@ jobs:
           bundler-cache: true
 
       - name: Scan for common Rails security vulnerabilities
-        run: bin/brakeman --no-pager
+        run: bundle exec brakeman --no-pager --format json --output tmp/brakeman.json
+
+      - name: Report security warnings
+        if: failure()
+        run: |
+          jq -r '.warnings[] | "::warning file=\(.file),line=\(.line // 1)::\(.warning_type): \(.message) (\(.confidence))"' tmp/brakeman.json || true
+          jq -r '.errors[]? | "::error::\(.error) \(.location // "")"' tmp/brakeman.json || true
+          jq -r '.obsolete[]? | "::error::Obsolete ignore entry \(.)"' tmp/brakeman.json || true

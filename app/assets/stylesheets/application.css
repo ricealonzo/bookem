@@ -23,3 +23,55 @@ html[data-theme="dark"] .card .card-footer,
 html[data-theme="dark"] .card .list-group-item {
   color: #b0b4bf;
 }
+
+/* Bookings */
+.booking-status {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.booking-status-pending   { background: #fff4d6; color: #7a5300; }
+.booking-status-confirmed { background: #dcf5e3; color: #17603a; }
+.booking-status-declined  { background: #fde2e1; color: #8a1f17; }
+.booking-status-cancelled { background: #e8e8ea; color: #4a4a52; }
+
+.booking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+.booking-actions form { margin: 0; }
+.booking-actions button { margin: 0; }
+
+.bookings-section { margin-bottom: 2.5rem; }
+
+.booking_form {
+  max-width: 420px;
+}
+.form-errors {
+  border: 1px solid #e0a3a0;
+  background: #fdf1f0;
+  color: #8a1f17;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.form-errors h3 { font-size: 1rem; margin-bottom: 0.25rem; color: inherit; }
+.form-hint { font-size: 0.875rem; opacity: 0.8; }
+
+.location_booking { margin: 2rem 0; }
+.location_actions { margin-top: 2rem; }
+
+.calendar-legend { font-size: 0.875rem; opacity: 0.8; }
+.calendar-booking { max-width: 6rem; font-size: 0.75rem; }
+.calendar-booking-confirmed .card-header { background: #dcf5e3; color: #17603a; }
+.calendar-booking-pending .card-header   { background: #fff4d6; color: #7a5300; }
+
+p.notice { color: #17603a; }
+p.alert  { color: #8a1f17; }

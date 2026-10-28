@@ -1,12 +1,8 @@
-<% content_for :title, "Editing booking" %>
-
-
+<% content_for :title, "Change booking" %>
 
 <%= render "form", booking: @booking %>
 
-<br>
-
-<div>
-  <%= link_to "Show this booking", @booking %> |
+<p>
+  <%= link_to "Back to this booking", @booking %> |
   <%= link_to "Back to bookings", bookings_path %>
-</div>
+</p>

@@ -1,10 +1,5 @@
-<% content_for :title, "New booking" %>
-
+<% content_for :title, "Book #{@booking.location.name}" %>
 
 <%= render "form", booking: @booking %>
 
-<br>
-
-<div>
-  <%= link_to "Back to bookings", bookings_path %>
-</div>
+<p><%= link_to "Back to #{@booking.location.name}", @booking.location %></p>

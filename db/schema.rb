@@ -10,17 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_16_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_28_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "bookings", force: :cascade do |t|
-    t.string "started_at"
-    t.string "ended_at"
     t.integer "guest_id"
     t.integer "location_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "started_at"
+    t.datetime "ended_at"
+    t.string "status", default: "pending", null: false
+    t.index ["guest_id"], name: "index_bookings_on_guest_id"
+    t.index ["location_id", "started_at"], name: "index_bookings_on_location_id_and_started_at"
   end
 
   create_table "locations", force: :cascade do |t|
@@ -34,6 +37,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_000001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "image"
+    t.index ["host_id"], name: "index_locations_on_host_id"
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|

@@ -1,24 +1,36 @@
-<div id="<%= dom_id booking %>" class="card h-100">
-  <div class="card-body" style>
-    <h5 class="card-title"><%= booking.location.name %></h5>
+<div id="<%= dom_id booking %>" class="card h-100 booking-card">
+  <div class="card-body">
+    <h5 class="card-title">
+      <%= link_to booking.location.name, booking.location %>
+      <span class="booking-status booking-status-<%= booking.status %>"><%= booking.status.capitalize %></span>
+    </h5>
+
     <p class="card-text mb-2">
-      <strong>Started at:</strong>
-      <%= booking.started_at %>
+      <strong>From:</strong>
+      <%= l(booking.started_at, format: :long) if booking.started_at %>
     </p>
     <p class="card-text mb-2">
-      <strong>Ended at:</strong>
-      <%= booking.ended_at %>
+      <strong>To:</strong>
+      <%= l(booking.ended_at, format: :long) if booking.ended_at %>
     </p>
 
-    <p class="card-text mb-0">
-      <strong>Guest:</strong>
-      <%= booking.guest.first_name %>
-    </p>
-
+    <% if booking.location.hosted_by?(current_user) %>
+      <p class="card-text mb-0">
+        <strong>Guest:</strong>
+        <%= booking.guest.full_name.presence || "Guest" %>
+        (<%= mail_to booking.guest.email %>)
+      </p>
+    <% else %>
+      <p class="card-text mb-0">
+        <strong>Host:</strong>
+        <%= booking.location.host.full_name.presence || "Bookem host" %>
+      </p>
+    <% end %>
   </div>
-  <% if current_page?(controller: 'bookings', action: 'index') %>
-      <div class="card-footer bg-transparent border-top-0">
-        <%= link_to "Show This Booking", booking, class: "btn btn-sm btn-primary" %>
-      </div>
+
+  <% if local_assigns[:show_link] %>
+    <div class="card-footer bg-transparent border-top-0">
+      <%= link_to "View booking", booking, class: "btn btn-sm btn-primary" %>
+    </div>
   <% end %>
 </div>

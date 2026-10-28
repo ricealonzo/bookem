@@ -1,8 +1,9 @@
-<%= form_with(model: booking) do |form|  %>
-  <% if booking.errors.any? %>
-    <div style="color: red">
-      <h2><%= pluralize(booking.errors.count, "error") %> prohibited this booking from being saved:</h2>
+<%= form_with(model: booking, class: "booking_form") do |form| %>
+  <h2><%= booking.persisted? ? "Change Booking Times" : "Book Now" %></h2>
 
+  <% if booking.errors.any? %>
+    <div class="form-errors" role="alert">
+      <h3><%= pluralize(booking.errors.count, "problem") %> with this booking:</h3>
       <ul>
         <% booking.errors.each do |error| %>
           <li><%= error.full_message %></li>
@@ -11,40 +12,26 @@
     </div>
   <% end %>
 
- 
-    <% if current_page?(controller: 'bookings', action: 'new') %>
-      <div class="container-fluid" style="width:500px" >
-    <% elsif current_page?(controller: 'locations', action: 'show')  %>
-      <div class="container-fluid" style="width:380px;" >
+  <p>You are booking <strong><%= booking.location.name %></strong>.</p>
+
+  <% min_time = Time.current.strftime("%Y-%m-%dT%H:%M") %>
+
+  <div class="mb-3">
+    <%= form.label :started_at, "Start" %>
+    <%= form.datetime_field :started_at, class: "form-control", min: min_time, required: true %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :ended_at, "End" %>
+    <%= form.datetime_field :ended_at, class: "form-control", min: min_time, required: true %>
+  </div>
+
+  <% unless booking.persisted? %>
+    <%= form.hidden_field :location_id, value: booking.location_id %>
+    <p class="form-hint">The host will confirm or decline your request.</p>
   <% end %>
 
-    <% if current_page?(controller: 'bookings', action: 'new') %>
-      <h2> Create Booking </h2>
-    <% elsif current_page?(controller: 'locations', action: 'show')  %>
-      <h2> Book Now </h2>
-    <% else %>
-      <h2> Edit Booking </h2>
-    <% end %>
-
-    <div class="mb-3">
-      <%= form.label :started_at, style: "display: block"%>
-      <%= form.datetime_field :started_at, class: "form-control"  %>
-    </div>
-
-    <div class="mb-3" >
-      <%= form.label :ended_at, style: "display: block" %>
-      <%= form.datetime_field :ended_at, class: "form-control"  %>
-    </div>
-
-    <div class="mb-3">
-      <p> You are booking <%= booking.location.name %></p>
-      <%= form.hidden_field :location_id, value: booking.location_id %>
-    </div>
-    
-    <%= form.hidden_field :guest_id, value: booking.guest_id %>
-
-    <div>
-      <%= form.submit %>
-    </div>
+  <div>
+    <%= form.submit booking.persisted? ? "Save Changes" : "Request Booking" %>
   </div>
 <% end %>

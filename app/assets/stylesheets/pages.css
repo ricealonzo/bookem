@@ -344,6 +344,7 @@
 .hours-summary tr.is-closed td,
 .hours-summary tr.is-closed th { color: var(--ink-soft); font-weight: 500; }
 
+.hours-editor > .field-hint { margin-bottom: 1rem; }
 .hours-editor .field { max-width: 14rem; }
 
 .hours-table {

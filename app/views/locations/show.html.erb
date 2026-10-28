@@ -43,7 +43,7 @@
 
     <aside class="booking-panel">
       <h2><%= @location.hosted_by?(current_user) ? "Your Location" : "Book this space" %></h2>
-      <p class="panel-note">Booked in <%= slot_length_label(@location.slot_minutes) %> slots. Times are Central Time.</p>
+      <p class="panel-note">Booked in <%= slot_length_adjective(@location.slot_minutes) %> slots. Times are Central Time.</p>
 
       <table class="hours-summary">
         <caption class="visually-hidden">Opening hours</caption>

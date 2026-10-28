@@ -9,6 +9,11 @@ module LocationsHelper
     end
   end
 
+  # For phrases like "in 2-hour slots".
+  def slot_length_adjective(minutes)
+    minutes < 60 || minutes % 60 != 0 ? "#{minutes}-minute" : "#{minutes / 60}-hour"
+  end
+
   def slot_length_options
     Location::SLOT_LENGTHS.map { |minutes| [ slot_length_label(minutes), minutes ] }
   end

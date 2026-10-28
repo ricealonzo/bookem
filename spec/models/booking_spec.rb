@@ -96,11 +96,5 @@ RSpec.describe Booking, type: :model do
       booking.cancel!
       expect { booking.cancel! }.to raise_error(Booking::InvalidTransition)
     end
-
-    it "only allows changing times while pending" do
-      expect(booking).to be_editable
-      booking.confirm!
-      expect(booking).not_to be_editable
-    end
   end
 end

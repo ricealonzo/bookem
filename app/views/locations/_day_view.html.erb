@@ -13,7 +13,7 @@
   <% if hours.nil? %>
     <p class="day-hours">Closed on <%= date.strftime("%A") %>s.</p>
   <% else %>
-    <p class="day-hours">Open <%= hours_label(hours) %>, in <%= slot_length_label(location.slot_minutes) %> slots.</p>
+    <p class="day-hours">Open <%= hours_label(hours) %>, in <%= slot_length_adjective(location.slot_minutes) %> slots.</p>
 
     <% if schedule.none? %>
       <p class="day-hours">The open hours are shorter than one slot.</p>

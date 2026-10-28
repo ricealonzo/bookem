@@ -1,7 +1,14 @@
 # Used by CI: checks that the booking-time conversion migration turned old
 # text times into real timestamps and marked old bookings confirmed.
-row = ActiveRecord::Base.connection.select_one("SELECT started_at, ended_at, status FROM bookings ORDER BY id LIMIT 1")
-bad = ActiveRecord::Base.connection.select_one("SELECT started_at FROM bookings ORDER BY id DESC LIMIT 1")
+# Read through the model so times come back in the app's time zone: a
+# booking typed in as 10:00 should still show as 10:00.
+first = Booking.order(:id).first
+row = {
+  "started_at" => first.started_at&.strftime("%Y-%m-%d %H:%M"),
+  "ended_at" => first.ended_at&.strftime("%Y-%m-%d %H:%M"),
+  "status" => first.status
+}
+bad = { "started_at" => Booking.order(:id).last.started_at }
 
 type = Booking.columns_hash["started_at"].type
 abort "started_at is #{type}, expected datetime" unless type == :datetime

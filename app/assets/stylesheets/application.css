@@ -9,9 +9,6 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
-@import "custom-image.css";
-@import "location_show.css";
-
 header {
   position: sticky;
   top: 0;

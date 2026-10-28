@@ -11,7 +11,7 @@ class LocationsController < ApplicationController
   # GET /locations/1 or /locations/1.json
   def show
     authorize @location
-    @bookings = @location.bookings.active.includes(:guest)
+    @bookings = @location.bookings.active.where.not(started_at: nil).where.not(ended_at: nil).includes(:guest)
     @booking = Booking.new(location: @location, guest: current_user)
   end
 

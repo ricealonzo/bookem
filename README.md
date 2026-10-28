@@ -4,15 +4,17 @@ Bookem lets small businesses list a space (a studio, salon chair, event loft and
 
 **Live site:** https://bookem-4pho.onrender.com
 
-Built with Ruby on Rails 8, PostgreSQL, Devise, Pundit and Cloudinary, and deployed on Render.
+Built with Ruby 3.4 and Rails 8.1, PostgreSQL, Devise, Pundit, Stimulus and Cloudinary, and deployed on Render.
 
 ## Features
 
 - **Browse locations** with photos, details and a map (Mapbox).
-- **Request a booking** for a time range. The availability calendar shows which times are taken without revealing who booked them.
+- **Availability calendar** shows each month at a glance, with today ringed, past days hatched, and taken times labeled *Booked* or *Requested*. Clicking a day fills in the booking form. On phones, taken times appear as dots with a list below. The public never sees who booked.
+- **Request a booking** for a time range from the panel beside the location details.
 - **Host approval.** Requests start as *pending*. The host confirms or declines them from the Bookings page.
 - **Change or cancel.** Guests can change times while a request is pending, and either side can cancel before the booking starts. Bookings are never deleted.
-- **One Bookings page** split into requests for your locations and your own trips.
+- **One Bookings page:** requests waiting for your reply come first, with Confirm and Decline on each card, then your upcoming bookings, what's coming up at your locations, and a folded-away history.
+- **Light and dark themes**, keyboard-friendly, and laid out for phones.
 
 ## How bookings stay correct
 
@@ -32,7 +34,12 @@ Built with Ruby on Rails 8, PostgreSQL, Devise, Pundit and Cloudinary, and deplo
 
 ## Tests
 
-RSpec model and request specs cover the booking rules, permissions, privacy and CSRF protection. GitHub Actions runs them against PostgreSQL on every pull request.
+RSpec model, helper and request specs cover the booking rules, calendar labels, permissions, privacy and CSRF protection. On every pull request, GitHub Actions:
+
+- runs the specs against PostgreSQL
+- rehearses the production database migration on old-format data
+- scans for security problems with Brakeman
+- boots the app with sample data and publishes screenshots of the main pages to the `ci-screenshots` branch
 
 ```bash
 bundle exec rspec
@@ -40,7 +47,7 @@ bundle exec rspec
 
 ## Running it locally
 
-Requirements: Ruby 3.4.1 and PostgreSQL.
+Requirements: Ruby 3.4.12 (see `.ruby-version`) and PostgreSQL.
 
 ```bash
 bundle install

@@ -1,44 +1,56 @@
-
-
 <% content_for :title, "Locations" %>
 
-<section class="locations_hero">
-  <div class="locations_hero_media" aria-hidden="true">
-    <video class="locations_hero_video" autoplay muted loop playsinline preload="metadata">
-      <source src="<%= asset_path('location_highlight_2.mp4') %>" type="video/mp4">
-    </video>
-  </div>
-  <div class="locations_hero_overlay" aria-hidden="true"></div>
-
-  <div class="locations_hero_content">
-    <div class="locations_hero_details">
-      <div>
-        <h2>About Us</h2>
-        <p>
-      We bridge the gap between small business owners and local customers seeking premium services and accommodations. Our team prioritizes clarity, safety, and local expertise so you can book with total confidence. List your business and service details today, or find your next local booking below!
-
-        </p>
-      </div>
-
-      <div>
-        <h2>Our Goal</h2>
-        <p>
-          Make it easy to discover locations that fit your needs, with transparent details and a smooth booking experience.
-        </p>
-      </div>
+<section class="hero">
+  <div class="hero-copy">
+    <h1>Book time at the places down the street.</h1>
+    <p class="hero-lede">
+      Studios, salons, barbershops and event spaces run by local owners.
+      Pick a time, send a request, and the host confirms it.
+    </p>
+    <div class="hero-actions">
+      <a class="button" href="#locations">Browse locations</a>
+      <%= link_to "List your space", new_location_path, class: "button button-quiet" %>
     </div>
   </div>
+
+  <figure class="hero-media">
+    <video autoplay muted loop playsinline preload="metadata" aria-hidden="true">
+      <source src="<%= asset_path("location_highlight_2.mp4") %>" type="video/mp4">
+    </video>
+  </figure>
 </section>
 
-<div style=" margin-left: 50px; ">
-    <h1>Choose a location to make a booking</h1>
-</div>
+<section class="how-it-works" aria-labelledby="how-heading">
+  <h2 id="how-heading">How booking works</h2>
+  <ol>
+    <li>
+      <h3>Find a space</h3>
+      <p>Browse photos, details and open times for each location.</p>
+    </li>
+    <li>
+      <h3>Request a time</h3>
+      <p>Choose a start and end. Taken times are shown on the calendar.</p>
+    </li>
+    <li>
+      <h3>Get confirmed</h3>
+      <p>The host confirms or declines, and you'll see it on your Bookings page.</p>
+    </li>
+  </ol>
+</section>
 
-<div id="locations">
-  <% @locations.each do |location| %>
-    <div  class="location_index_container">
-      <%= render location %>
-    </div>
-      
+<section id="locations" class="locations" aria-labelledby="locations-heading">
+  <div class="section-heading">
+    <h2 id="locations-heading">Places to book</h2>
+    <p><%= pluralize(@locations.size, "location") %></p>
+  </div>
+
+  <% if @locations.any? %>
+    <ul class="location-grid">
+      <% @locations.each do |location| %>
+        <li><%= render "locations/location_card", location: location %></li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="empty-state">No locations yet. <%= link_to "List the first one", new_location_path %>.</p>
   <% end %>
-</div>
+</section>

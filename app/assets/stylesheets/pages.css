@@ -1,0 +1,324 @@
+/* Page-level layouts: home, location page, bookings, account forms. */
+
+/* ---------- Home ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 2.5rem 3.5rem;
+  align-items: center;
+  padding: 2.5rem 0 3.5rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 6.4vw, 4.9rem);
+  font-weight: 780;
+  font-variation-settings: "wdth" 78;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  max-width: 12ch;
+  margin-bottom: 1.25rem;
+}
+
+.hero-lede {
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+  max-width: 38ch;
+  margin-bottom: 1.75rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.hero-media {
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  max-height: 560px;
+  border-radius: var(--radius-large);
+  overflow: hidden;
+  background: var(--awning-tint);
+  border: 1px solid var(--line);
+}
+.hero-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.how-it-works {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 2rem 0 0.75rem;
+  margin-bottom: 3rem;
+}
+.how-it-works h2 { font-size: 1.25rem; margin-bottom: 1.25rem; }
+.how-it-works ol {
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem 2.5rem;
+  padding: 0;
+  margin: 0;
+}
+.how-it-works li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.9rem;
+}
+.how-it-works li::before {
+  content: counter(step);
+  grid-row: span 2;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.6rem;
+  line-height: 0.9;
+  color: var(--awning);
+}
+.how-it-works h3 { margin: 0.1rem 0 0.25rem; }
+.how-it-works p { color: var(--ink-soft); font-size: 0.975rem; }
+
+.location-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2.25rem 1.75rem;
+}
+
+.location-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius);
+}
+.location-card:hover { color: inherit; }
+.location-card:hover .location-card-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+.location-card-photo {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--closed);
+  margin-bottom: 0.85rem;
+}
+.location-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.location-card-name { font-size: 1.3rem; margin: 0 0 0.15rem; }
+.location-card-place { color: var(--ink-soft); font-weight: 500; margin: 0 0 0.4rem; }
+.location-card-description { color: var(--ink-soft); font-size: 0.95rem; margin: 0; }
+
+/* ---------- Location page ---------- */
+
+.location-header { margin: 0.5rem 0 1.75rem; }
+.location-header h1 { margin-bottom: 0.35rem; }
+.location-place { color: var(--ink-soft); font-size: 1.1rem; margin: 0; }
+
+.location-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-areas: "main panel" "map panel";
+  gap: 0 3rem;
+  align-items: start;
+  margin-bottom: 3.5rem;
+}
+.location-main { grid-area: main; }
+.location-map-section { grid-area: map; }
+.booking-panel { grid-area: panel; }
+
+.location-photo {
+  margin: 0 0 1.5rem;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-large);
+  overflow: hidden;
+  background: var(--closed);
+}
+.location-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.location-description {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  max-width: 62ch;
+  margin-bottom: 1.5rem;
+}
+
+.location-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem 2rem;
+  margin: 0 0 2rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.location-facts dt { font-size: 0.875rem; color: var(--ink-soft); font-weight: 700; margin-bottom: 0.2rem; }
+.location-facts dd { margin: 0; }
+
+.location-map {
+  width: 100%;
+  height: 320px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--closed);
+  overflow: hidden;
+}
+.map-error {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: var(--ink-soft);
+}
+/* No map to show: keep a small note instead of an empty box. */
+.location-map.is-unavailable { height: auto; padding: 0.85rem 1rem; }
+
+.booking-panel {
+  position: sticky;
+  top: 1.25rem;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-top: 6px solid var(--awning);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.4rem 1.25rem;
+  transition: box-shadow 200ms ease;
+}
+.booking-panel h2 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+.booking-panel .form-intro { color: var(--ink-soft); margin-bottom: 1.1rem; }
+.booking-panel .form-hint { margin-top: 0.85rem; }
+.panel-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+
+/* A brief ring when a calendar day fills in the form. */
+.booking-panel.is-updated { animation: panel-ring 1.2s ease-out; }
+@keyframes panel-ring {
+  from { box-shadow: 0 0 0 6px var(--awning-tint); }
+  to { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---------- Bookings ---------- */
+
+.bookings-section { margin-bottom: 3rem; }
+
+.booking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+
+.booking {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+}
+.booking-pending { border-left-color: var(--marigold); }
+.booking-confirmed { border-left-color: var(--awning); }
+.booking-declined { border-left-color: var(--danger); }
+
+.booking-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.booking-place { font-size: 1.15rem; margin: 0; }
+.booking-place a { color: var(--ink); text-decoration: none; }
+.booking-place a:hover { text-decoration: underline; }
+.booking-when { font-weight: 700; margin-bottom: 0.25rem; }
+.booking-who { color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 0.5rem; }
+.booking-link { font-weight: 700; font-size: 0.95rem; margin-left: auto; }
+
+.booking-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.booking-foot:empty { display: none; }
+
+.bookings-section h2 { display: flex; align-items: center; gap: 0.6rem; }
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--marigold);
+  color: #2b1f00;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.section-note { color: var(--ink-soft); margin: -0.25rem 0 1rem; }
+
+.past-bookings summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+.past-bookings .booking { opacity: 0.85; }
+
+.host-invite {
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  padding-top: 1.25rem;
+}
+
+.booking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.booking-explainer { color: var(--ink-soft); margin-top: 1rem; }
+
+/* ---------- Account pages ---------- */
+
+.auth-page form { margin-bottom: 1.5rem; }
+
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.975rem;
+}
+
+.danger-zone {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.danger-zone h2 { font-size: 1.2rem; }
+.danger-zone p { color: var(--ink-soft); }
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; padding-top: 1.5rem; }
+  .hero-media { aspect-ratio: 16 / 10; }
+  .how-it-works ol { grid-template-columns: 1fr; }
+  .location-layout { grid-template-columns: 1fr; grid-template-areas: "main" "panel" "map"; }
+  .booking-panel { position: static; margin-bottom: 2rem; }
+}

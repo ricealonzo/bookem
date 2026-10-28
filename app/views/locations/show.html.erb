@@ -1,40 +1,157 @@
+<% content_for :title, @location.name %>
 
-  
-  <h1><%= @location.name  %></h1>
+<article class="location-page" data-controller="booking-picker">
+  <header class="location-header">
+    <h1><%= @location.name %></h1>
+    <p class="location-place"><%= @location.full_address %></p>
+  </header>
 
+  <div class="location-layout">
+    <div class="location-main">
+      <figure class="location-photo">
+        <% if @location.image? %>
+          <%= image_tag @location.image.url, alt: "Photo of #{@location.name}" %>
+        <% else %>
+          <span class="photo-placeholder" aria-hidden="true"><%= @location.name.first %></span>
+        <% end %>
+      </figure>
 
+      <% if @location.description.present? %>
+        <p class="location-description"><%= @location.description %></p>
+      <% end %>
 
-<div class="location_show_container">
-
-  <%= render @location %>
-
-  <% full_address = @location.full_address %>
-  <div class="mt-3">
-    <h2>Map</h2>
-    <p class="location-address"><%= full_address.presence || "Address unavailable" %></p>
-    <div
-      id="map"
-      class="location-map"
-      data-address="<%= full_address %>"
-      data-mapbox-token="<%= ENV.fetch("MAPBOX_ACCESS_TOKEN", "") %>">
+      <dl class="location-facts">
+        <div>
+          <dt>Address</dt>
+          <dd><%= @location.full_address.presence || "Not listed" %></dd>
+        </div>
+        <div>
+          <dt>Hosted by</dt>
+          <dd><%= @location.host.full_name.presence || "Bookem host" %><%= " (#{@location.host.organization})" if @location.host.organization.present? %></dd>
+        </div>
+      </dl>
     </div>
+
+    <section class="location-map-section" aria-label="Map">
+      <div
+        id="map"
+        class="location-map"
+        data-address="<%= @location.full_address %>"
+        data-mapbox-token="<%= ENV.fetch("MAPBOX_ACCESS_TOKEN", "") %>">
+      </div>
+    </section>
+
+    <aside class="booking-panel" data-booking-picker-target="panel">
+      <% if current_user.nil? %>
+        <h2>Book this space</h2>
+        <p>
+          <%= link_to "Log in", new_user_session_path %> or <%= link_to "sign up", new_user_registration_path %>
+          to request a booking.
+        </p>
+      <% elsif @location.hosted_by?(current_user) %>
+        <h2>Your Location</h2>
+        <p>Guests' requests show up on your <%= link_to "Bookings", bookings_path %> page, where you can confirm or decline them.</p>
+        <div class="panel-actions">
+          <% if policy(@location).update? %>
+            <%= link_to "Edit location", edit_location_path(@location), class: "button button-quiet" %>
+          <% end %>
+          <% if policy(@location).destroy? %>
+            <%= button_to "Delete location", @location, method: :delete, class: "button button-danger",
+                  data: { confirm: "Delete this location and all its bookings?" } %>
+          <% end %>
+        </div>
+      <% else %>
+        <%= render "bookings/form", booking: @booking %>
+      <% end %>
+    </aside>
   </div>
-</div>
+
+  <section class="availability" aria-labelledby="availability-heading">
+    <div class="section-heading">
+      <h2 id="availability-heading">Availability</h2>
+      <ul class="calendar-legend" aria-label="Legend">
+        <li><span class="swatch swatch-confirmed"></span> Booked</li>
+        <li><span class="swatch swatch-pending"></span> Requested</li>
+        <li><span class="swatch swatch-today"></span> Today</li>
+      </ul>
+    </div>
+    <% if current_user && !@location.hosted_by?(current_user) %>
+      <p class="availability-hint">Choose a day to fill in the booking form. Pick a time that doesn't overlap the ones shown.</p>
+    <% end %>
+
+    <%= turbo_frame_tag "bookings_calendar" do %>
+      <% pickable = current_user.present? && !@location.hosted_by?(current_user) %>
+      <%= month_calendar(events: @bookings, attribute: :started_at, end_attribute: :ended_at) do |date, bookings| %>
+        <% day_bookings = bookings_on(date, bookings) %>
+        <% if pickable && date >= Date.current %>
+          <button type="button" class="day-pick" data-action="booking-picker#pick"
+                  data-booking-picker-date-param="<%= date.iso8601 %>"
+                  aria-label="Request a time on <%= l(date, format: :long) %>"></button>
+        <% end %>
+        <span class="day-number"><%= date.day %></span>
+        <% if day_bookings.any? %>
+          <ul class="day-bookings">
+            <% day_bookings.each do |booking| %>
+              <% involved = current_user && (booking.guest_id == current_user.id || @location.hosted_by?(current_user)) %>
+              <li class="slot slot-<%= booking.status %>">
+                <% label = booking_time_label(booking, date) %>
+                <% if involved %>
+                  <%= link_to booking, data: { turbo_frame: "_top" }, title: "#{booking.guest.full_name}: #{label}" do %>
+                    <span class="slot-time"><%= label %></span>
+                    <span class="slot-who"><%= booking.guest.first_name.presence || "Guest" %></span>
+                  <% end %>
+                <% else %>
+                  <span class="slot-time"><%= label %></span>
+                  <span class="visually-hidden"><%= booking.confirmed? ? "Booked" : "Requested" %></span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      <% end %>
+
+      <% month_start = calendar_month_start(params[:start_date]) %>
+      <% month_bookings = bookings_in_month(@bookings, month_start) %>
+      <div class="agenda">
+        <h3>Taken times in <%= l(month_start, format: "%B") %></h3>
+        <% if month_bookings.any? %>
+          <ul>
+            <% month_bookings.each do |booking| %>
+              <li class="agenda-item agenda-<%= booking.status %>">
+                <span class="agenda-when"><%= booking_range_label(booking) %></span>
+                <span class="agenda-status"><%= booking.confirmed? ? "Booked" : "Requested" %></span>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p>Nothing booked this month, so every time is open.</p>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <p class="back-link"><%= link_to "Back to all locations", locations_path %></p>
+</article>
+
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  (function () {
     const mapElement = document.getElementById("map");
     if (!mapElement) return;
 
     const token = mapElement.dataset.mapboxToken;
     const address = mapElement.dataset.address;
 
-    if (!token || !address) {
-      mapElement.innerHTML = "<p class=\"map-error\">Map is unavailable.</p>";
+    const unavailable = (message) => {
+      mapElement.classList.add("is-unavailable");
+      mapElement.innerHTML = `<p class="map-error">${message}</p>`;
+    };
+
+    if (!token || !address || !window.mapboxgl) {
+      unavailable("Map isn't available for this location.");
       return;
     }
 
     mapboxgl.accessToken = token;
-
     const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1`;
 
     fetch(geocodeUrl)
@@ -44,70 +161,10 @@
         if (!feature) throw new Error("No geocode result");
 
         const [lng, lat] = feature.center;
-        const map = new mapboxgl.Map({
-          container: "map",
-          style: "mapbox://styles/mapbox/standard",
-          zoom: 12,
-          center: [lng, lat]
-        });
-
+        const map = new mapboxgl.Map({ container: "map", style: "mapbox://styles/mapbox/standard", zoom: 13, center: [lng, lat] });
         map.addControl(new mapboxgl.NavigationControl());
-        new mapboxgl.Marker().setLngLat([lng, lat]).addTo(map);
+        new mapboxgl.Marker({ color: "#0F6B5C" }).setLngLat([lng, lat]).addTo(map);
       })
-      .catch(() => {
-        mapElement.innerHTML = "<p class=\"map-error\">Unable to load the map for this address.</p>";
-      });
-  });
+      .catch(() => unavailable("Couldn't load the map for this address."));
+  })();
 </script>
-<section class="location_booking">
-  <% if current_user.nil? %>
-    <h2>Book Now</h2>
-    <p><%= link_to "Log in", new_user_session_path %> or <%= link_to "sign up", new_user_registration_path %> to request a booking.</p>
-  <% elsif @location.hosted_by?(current_user) %>
-    <h2>Your Location</h2>
-    <p>Guests' requests show up on your <%= link_to "Bookings", bookings_path %> page, where you can confirm or decline them.</p>
-  <% else %>
-    <%= render "bookings/form", booking: @booking %>
-  <% end %>
-</section>
-
-<h2>Availability</h2>
-<p class="calendar-legend">Booked and requested times are blocked. Pick a time that doesn't overlap them.</p>
-
-<%= turbo_frame_tag "bookings_calendar" do %>
-  <%= month_calendar(events: @bookings, attribute: :started_at, end_attribute: :ended_at) do |date, bookings| %>
-    <div class="day">
-      <div class="fw-bold"><%= date.day %></div>
-
-      <% bookings.each do |booking| %>
-        <% involved = current_user && (booking.guest_id == current_user.id || @location.hosted_by?(current_user)) %>
-        <div class="card-sm text-truncate calendar-booking calendar-booking-<%= booking.status %>">
-          <div class="card-header">
-            <div class="card-title">
-              <% if involved %>
-                <%= link_to booking.guest.full_name.presence || "Guest", booking, data: { turbo_frame: "_top" } %>
-              <% else %>
-                <%= booking.confirmed? ? "Booked" : "Requested" %>
-              <% end %>
-            </div>
-          </div>
-
-          <div class="card-footer">
-            <p class="card-text"><%= booking.started_at.strftime("%-I:%M %p") %>–<%= booking.ended_at.strftime("%-I:%M %p") %></p>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
-<% end %>
-
-<div class="location_actions">
-  <%= link_to "Back to locations", locations_path %>
-
-  <% if policy(@location).update? %>
-    | <%= link_to "Edit this location", edit_location_path(@location) %>
-  <% end %>
-  <% if policy(@location).destroy? %>
-    <%= button_to "Delete this location", @location, method: :delete, form: { data: { turbo_confirm: "Delete this location and all its bookings?" } } %>
-  <% end %>
-</div>

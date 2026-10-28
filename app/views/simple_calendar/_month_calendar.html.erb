@@ -1,19 +1,27 @@
-<div class="simple-calendar">
+<div class="simple-calendar month-calendar">
   <div class="calendar-heading">
-    <time datetime="<%= start_date.strftime('%Y-%m') %>" class="calendar-title"><%= t('date.month_names')[start_date.month] %> <%= start_date.year %></time>
+    <h3 class="calendar-title">
+      <time datetime="<%= start_date.strftime('%Y-%m') %>"><%= t('date.month_names')[start_date.month] %> <%= start_date.year %></time>
+    </h3>
 
-    <nav>
-      <%= link_to t('simple_calendar.previous', default: 'Previous'), calendar.url_for_previous_view %>
-      <%= link_to t('simple_calendar.today', default: 'Today'), calendar.url_for_today_view %>
-      <%= link_to t('simple_calendar.next', default: 'Next'), calendar.url_for_next_view %>
+    <nav class="calendar-nav" aria-label="Change month">
+      <%= link_to calendar.url_for_previous_view, class: "calendar-nav-button", aria: { label: "Previous month" } do %>
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <% end %>
+      <%= link_to "This month", calendar.url_for_today_view, class: "calendar-nav-today" %>
+      <%= link_to calendar.url_for_next_view, class: "calendar-nav-button", aria: { label: "Next month" } do %>
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <% end %>
     </nav>
   </div>
 
-  <table class="table table-striped">
+  <table class="calendar-grid">
     <thead>
       <tr>
         <% date_range.slice(0, 7).each do |day| %>
-          <th><%= t('date.abbr_day_names')[day.wday] %></th>
+          <th scope="col">
+            <abbr title="<%= t('date.day_names')[day.wday] %>"><%= t('date.abbr_day_names')[day.wday] %></abbr>
+          </th>
         <% end %>
       </tr>
     </thead>

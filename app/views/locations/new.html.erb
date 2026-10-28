@@ -1,12 +1,12 @@
-<% content_for :title, "New location" %>
-<div>
+<% content_for :title, "List your space" %>
 
+<div class="narrow form-page">
+  <header class="page-header">
+    <h1>List your space</h1>
+    <p>Add your location so people nearby can request time there. You'll confirm each request yourself.</p>
+  </header>
 
-<%= render "form", location: @location %>
-</div>
+  <%= render "form", location: @location %>
 
-<br>
-
-<div>
-  <%= link_to "Back to locations", locations_path %>
+  <p class="back-link"><%= link_to "Back to all locations", locations_path %></p>
 </div>

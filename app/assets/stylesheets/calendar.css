@@ -95,9 +95,13 @@
 /* Days that have passed can't be booked. */
 .calendar-grid td.past {
   background:
-    repeating-linear-gradient(135deg, transparent 0 7px, var(--line) 7px 8px),
+    repeating-linear-gradient(135deg, transparent 0 9px, color-mix(in srgb, var(--line) 55%, transparent) 9px 10px),
     var(--closed);
+  border-color: transparent;
 }
+
+/* Weeks that are entirely in the past shrink, so upcoming days get the room. */
+.calendar-grid tr:not(:has(td:not(.past))) td { height: 2.6rem; }
 .calendar-grid td.past .day-number { color: var(--ink-soft); font-weight: 500; }
 
 .calendar-grid td.today { border: 2px solid var(--awning); }
@@ -209,6 +213,7 @@
   .calendar-grid { border-spacing: 3px; margin: 0 -3px; width: calc(100% + 6px); }
   .calendar-grid th { padding: 0 0.15rem; font-size: 0.75rem; text-align: center; }
   .calendar-grid td { height: 3.4rem; padding: 0.2rem; text-align: center; border-radius: 8px; }
+  .calendar-grid tr:not(:has(td:not(.past))) td { height: 2.4rem; }
   .day-number { min-width: 1.5rem; height: 1.5rem; font-size: 0.85rem; }
 
   /* Times become dots; the list below the calendar has the details. */

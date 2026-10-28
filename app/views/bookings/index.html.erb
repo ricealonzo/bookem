@@ -4,36 +4,57 @@
   <h1>Bookings</h1>
 </header>
 
-<section class="bookings-section" aria-labelledby="requests-heading">
-  <h2 id="requests-heading">Requests for your locations</h2>
-  <% if @requests.any? %>
+<% if @awaiting_reply.any? %>
+  <section class="bookings-section" aria-labelledby="awaiting-heading">
+    <h2 id="awaiting-heading">Waiting for your reply <span class="count"><%= @awaiting_reply.size %></span></h2>
+    <p class="section-note">Guests have asked to book your locations. Confirm or decline each request.</p>
     <ul id="booking_requests" class="booking-list">
-      <% @requests.each do |booking| %>
-        <li>
-          <%= render booking, show_link: true %>
-          <% if policy(booking).confirm? %>
-            <div class="booking-actions">
-              <%= button_to "Confirm", confirm_booking_path(booking), method: :patch, class: "button button-small" %>
-              <%= button_to "Decline", decline_booking_path(booking), method: :patch, class: "button button-small button-quiet" %>
-            </div>
-          <% end %>
-        </li>
+      <% @awaiting_reply.each do |booking| %>
+        <li><%= render booking, show_link: true, actions: true %></li>
       <% end %>
     </ul>
-  <% else %>
-    <p class="empty-state">No one has requested your locations yet. <%= link_to "List your space", new_location_path %> to start hosting.</p>
-  <% end %>
-</section>
+  </section>
+<% end %>
 
 <section class="bookings-section" aria-labelledby="trips-heading">
-  <h2 id="trips-heading">Your trips</h2>
-  <% if @trips.any? %>
+  <h2 id="trips-heading">Your upcoming bookings</h2>
+  <% if @upcoming_trips.any? %>
     <ul id="bookings" class="booking-list">
-      <% @trips.each do |booking| %>
+      <% @upcoming_trips.each do |booking| %>
         <li><%= render booking, show_link: true %></li>
       <% end %>
     </ul>
   <% else %>
-    <p class="empty-state">You haven't booked anything yet. <%= link_to "Browse locations", locations_path %> to find a space.</p>
+    <p class="empty-state">You don't have any upcoming bookings. <%= link_to "Browse locations", locations_path %> to find a space.</p>
   <% end %>
 </section>
+
+<% if @upcoming_hosting.any? || current_user.locations.exists? %>
+  <section class="bookings-section" aria-labelledby="hosting-heading">
+    <h2 id="hosting-heading">Coming up at your locations</h2>
+    <% if @upcoming_hosting.any? %>
+      <ul class="booking-list">
+        <% @upcoming_hosting.each do |booking| %>
+          <li><%= render booking, show_link: true %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="empty-state">No confirmed bookings at your locations yet.</p>
+    <% end %>
+  </section>
+<% end %>
+
+<% if @past.any? %>
+  <details class="bookings-section past-bookings">
+    <summary>Past, declined and cancelled (<%= @past.size %>)</summary>
+    <ul class="booking-list">
+      <% @past.each do |booking| %>
+        <li><%= render booking, show_link: true %></li>
+      <% end %>
+    </ul>
+  </details>
+<% end %>
+
+<% unless current_user.locations.exists? %>
+  <p class="host-invite">Have a studio, chair or room to rent out? <%= link_to "List your space", new_location_path %> and you'll confirm requests here.</p>
+<% end %>

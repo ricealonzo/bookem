@@ -30,16 +30,16 @@
           <dd><%= @location.host.full_name.presence || "Bookem host" %><%= " (#{@location.host.organization})" if @location.host.organization.present? %></dd>
         </div>
       </dl>
-
-      <section class="location-map-section" aria-label="Map">
-        <div
-          id="map"
-          class="location-map"
-          data-address="<%= @location.full_address %>"
-          data-mapbox-token="<%= ENV.fetch("MAPBOX_ACCESS_TOKEN", "") %>">
-        </div>
-      </section>
     </div>
+
+    <section class="location-map-section" aria-label="Map">
+      <div
+        id="map"
+        class="location-map"
+        data-address="<%= @location.full_address %>"
+        data-mapbox-token="<%= ENV.fetch("MAPBOX_ACCESS_TOKEN", "") %>">
+      </div>
+    </section>
 
     <aside class="booking-panel" data-booking-picker-target="panel">
       <% if current_user.nil? %>
@@ -141,8 +141,13 @@
     const token = mapElement.dataset.mapboxToken;
     const address = mapElement.dataset.address;
 
+    const unavailable = (message) => {
+      mapElement.classList.add("is-unavailable");
+      mapElement.innerHTML = `<p class="map-error">${message}</p>`;
+    };
+
     if (!token || !address || !window.mapboxgl) {
-      mapElement.innerHTML = "<p class=\"map-error\">Map isn't available for this location.</p>";
+      unavailable("Map isn't available for this location.");
       return;
     }
 
@@ -160,8 +165,6 @@
         map.addControl(new mapboxgl.NavigationControl());
         new mapboxgl.Marker({ color: "#0F6B5C" }).setLngLat([lng, lat]).addTo(map);
       })
-      .catch(() => {
-        mapElement.innerHTML = "<p class=\"map-error\">Couldn't load the map for this address.</p>";
-      });
+      .catch(() => unavailable("Couldn't load the map for this address."));
   })();
 </script>

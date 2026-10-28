@@ -135,23 +135,32 @@ img { max-width: 100%; }
   border-bottom: 1px solid var(--line);
 }
 
-.site-header::before {
+/* Awning: alternating stripes with a scalloped edge. */
+.site-header::before,
+.site-header::after {
   content: "";
-  display: block;
-  height: 20px;
-  background: repeating-linear-gradient(90deg, var(--awning) 0 24px, var(--surface) 24px 48px);
-  -webkit-mask:
-    linear-gradient(#000, #000) top / 100% 8px no-repeat,
-    radial-gradient(circle at 50% 0, #000 11.5px, transparent 12px) 0 8px / 24px 12px repeat-x;
-  mask:
-    linear-gradient(#000, #000) top / 100% 8px no-repeat,
-    radial-gradient(circle at 50% 0, #000 11.5px, transparent 12px) 0 8px / 24px 12px repeat-x;
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.site-header::before {
+  top: 0;
+  height: 10px;
+  background: repeating-linear-gradient(90deg, var(--awning) 0 24px, var(--awning-tint) 24px 48px);
+}
+.site-header::after {
+  top: 10px;
+  height: 12px;
+  background:
+    radial-gradient(circle at 12px 0, var(--awning) 11.5px, transparent 12px) 0 0 / 48px 12px repeat-x,
+    radial-gradient(circle at 12px 0, var(--awning-tint) 11.5px, transparent 12px) 24px 0 / 48px 12px repeat-x;
 }
 
 .site-header-inner {
   max-width: var(--page-width);
   margin: 0 auto;
-  padding: 0.5rem var(--gutter) 0.85rem;
+  padding: 1.9rem var(--gutter) 0.85rem;
   display: flex;
   align-items: center;
   justify-content: space-between;

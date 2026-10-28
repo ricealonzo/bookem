@@ -10,6 +10,17 @@ class BookingsController < ApplicationController
     @bookings = bookings
     @trips = bookings.where(guest_id: current_user.id)
     @requests = bookings.where(locations: { host_id: current_user.id })
+
+    # Grouped for the page: what needs the host's reply, what's coming up,
+    # and everything finished, declined or cancelled.
+    now = Time.current
+    requests = @requests.to_a
+    trips = @trips.to_a
+    @awaiting_reply = requests.select(&:respondable?)
+    @upcoming_hosting = requests.select { |b| b.confirmed? && b.ended_at.present? && b.ended_at > now }
+    @upcoming_trips = trips.select { |b| b.active? && b.ended_at.present? && b.ended_at > now }
+    @past = (requests + trips - @awaiting_reply - @upcoming_hosting - @upcoming_trips)
+      .uniq.sort_by { |b| b.started_at || Time.at(0) }.reverse
   end
 
   # GET /bookings/1 or /bookings/1.json

@@ -20,7 +20,13 @@
     <% end %>
   </p>
 
-  <% if local_assigns[:show_link] %>
-    <%= link_to "View booking", booking, class: "booking-link" %>
-  <% end %>
+  <div class="booking-foot">
+    <% if local_assigns[:actions] && policy(booking).confirm? %>
+      <%= button_to "Confirm", confirm_booking_path(booking), method: :patch, class: "button button-small" %>
+      <%= button_to "Decline", decline_booking_path(booking), method: :patch, class: "button button-small button-quiet" %>
+    <% end %>
+    <% if local_assigns[:show_link] %>
+      <%= link_to "View booking", booking, class: "booking-link" %>
+    <% end %>
+  </div>
 </article>

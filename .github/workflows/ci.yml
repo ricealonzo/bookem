@@ -6,56 +6,55 @@ on:
     branches: [ main ]
 
 jobs:
-  # All jobs are currently disabled. Uncomment a job below to enable it.
-  placeholder:
-      runs-on: ubuntu-latest
-      steps:
-        - run: 'echo "CI jobs disabled"'
+  test:
+    runs-on: ubuntu-latest
 
-  # scan_ruby:
-  #   runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/bookem_test
 
-  #     - name: Set up Ruby
-  #       uses: ruby/setup-ruby@v1
-  #       with:
-  #         ruby-version: .ruby-version
-  #         bundler-cache: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Scan for common Rails security vulnerabilities using static analysis
-  #       run: bin/brakeman --no-pager
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
 
-  # scan_js:
-  #   runs-on: ubuntu-latest
+      - name: Set up database
+        run: bin/rails db:create db:schema:load
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+      - name: Run tests
+        run: bundle exec rspec --format documentation
 
-  #     - name: Set up Ruby
-  #       uses: ruby/setup-ruby@v1
-  #       with:
-  #         ruby-version: .ruby-version
-  #         bundler-cache: true
+  scan_ruby:
+    runs-on: ubuntu-latest
 
-  #     - name: Scan for security vulnerabilities in JavaScript dependencies
-  #       run: bin/importmap audit
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  # lint:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
 
-  #     - name: Set up Ruby
-  #       uses: ruby/setup-ruby@v1
-  #       with:
-  #         ruby-version: .ruby-version
-  #         bundler-cache: true
-
-  #     - name: Lint code for consistent style
-  #       run: bin/rubocop -f github
-
+      - name: Scan for common Rails security vulnerabilities
+        run: bin/brakeman --no-pager

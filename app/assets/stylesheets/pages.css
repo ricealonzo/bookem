@@ -451,3 +451,12 @@ select {
 .setup-add > summary::-webkit-details-marker { display: none; }
 .setup-add-inline { margin-top: 0.5rem; }
 .booking-extra { margin: 0.2rem 0; color: var(--ink-soft); }
+
+/* Resource rows: name, Rename and Remove on one line. */
+.setup-list > li > .setup-inline { flex: 1 1 16rem; flex-wrap: nowrap; }
+.setup-inline input[type="text"] { width: auto; flex: 1 1 10rem; min-width: 0; }
+.setup-inline .button,
+.setup-list form.button_to .button { width: auto; white-space: nowrap; }
+.setup-list form.button_to { margin: 0; }
+.setup-add-inline { flex-wrap: wrap; }
+.setup-add-inline label { flex-basis: 100%; }

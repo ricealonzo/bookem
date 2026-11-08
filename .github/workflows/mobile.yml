@@ -88,8 +88,12 @@ jobs:
       # Downloads sometimes time out on GitHub's runners, so retry them.
       - name: Install Gradle
         run: |
-          curl -fsSL --retry 6 --retry-all-errors --retry-delay 10 -o "$RUNNER_TEMP/gradle.zip" \
-            https://services.gradle.org/distributions/gradle-9.2.0-bin.zip
+          for url in \
+            https://services.gradle.org/distributions/gradle-9.2.0-bin.zip \
+            https://github.com/gradle/gradle-distributions/releases/download/v9.2.0/gradle-9.2.0-bin.zip; do
+            curl -fsSL --retry 3 --retry-all-errors --retry-delay 10 -o "$RUNNER_TEMP/gradle.zip" "$url" && break
+            echo "::warning::Couldn't download Gradle from $url"
+          done
           unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/gradle-9.2.0/bin" >> "$GITHUB_PATH"
 

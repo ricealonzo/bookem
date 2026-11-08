@@ -94,8 +94,12 @@ jobs:
             curl -fsSL --retry 3 --retry-all-errors --retry-delay 10 -o "$RUNNER_TEMP/gradle.zip" "$url" && break
             echo "::warning::Couldn't download Gradle from $url"
           done
-          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/gradle-9.2.0/bin" >> "$GITHUB_PATH"
+          if [ -s "$RUNNER_TEMP/gradle.zip" ] && unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"; then
+            echo "$RUNNER_TEMP/gradle-9.2.0/bin" >> "$GITHUB_PATH"
+          else
+            echo "::warning::Using the Gradle already on the runner"
+            gradle --version
+          fi
 
       # The Gradle wrapper (gradlew) lets anyone build with the right Gradle
       # version. Make it if it isn't committed yet.

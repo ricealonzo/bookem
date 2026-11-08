@@ -5,6 +5,7 @@
 #  id          :bigint           not null, primary key
 #  address     :string
 #  city        :string
+#  deposit_percent :integer      default(0), not null
 #  description :string
 #  image       :string
 #  name        :string
@@ -42,6 +43,7 @@ class Location < ApplicationRecord
   validates :slot_minutes, inclusion: { in: SLOT_LENGTHS, message: "isn't one of the offered lengths" }
   validates :resource_label, presence: true, length: { maximum: 30 }
   validates :slot_price_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :deposit_percent, inclusion: { in: Deposits::PERCENTS, message: "isn't one of the offered amounts" }
   validate :open_at_least_one_day
   validate :services_fit_the_slots, if: :slot_minutes_changed?
 
@@ -72,6 +74,12 @@ class Location < ApplicationRecord
 
   def active_services
     services.select(&:active?)
+  end
+
+  # Deposits need Stripe switched on for the site, a host whose Stripe
+  # account can take payments, and a deposit amount.
+  def collects_deposits?
+    deposit_percent.to_i.positive? && StripeApi.enabled? && host&.stripe_charges_enabled?
   end
 
   # Guests pick a service when the location offers any.

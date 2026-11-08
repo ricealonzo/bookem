@@ -12,6 +12,8 @@
 #  organization           :string
 #  phone_number           :string
 #  remember_created_at    :datetime
+#  stripe_account_id      :string
+#  stripe_charges_enabled :boolean          default(FALSE), not null
 #  reset_password_sent_at :datetime
 #  reset_password_token   :string
 #  website                :string
@@ -39,6 +41,12 @@ class User < ApplicationRecord
   has_many  :bookings, class_name: "Booking", foreign_key: "guest_id", dependent: :destroy
 
   has_many :hostings, through: :locations, source: :bookings
+
+  # Set up through PayoutsController. Deposits for this user's locations are
+  # paid out to this Stripe account.
+  def payouts_ready?
+    stripe_account_id.present? && stripe_charges_enabled?
+  end
 
   def full_name
     [ first_name, last_name ].compact_blank.join(" ")

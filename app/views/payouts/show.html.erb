@@ -1,0 +1,37 @@
+<% content_for :title, "Payouts" %>
+
+<div class="narrow setup-page">
+  <header class="page-header">
+    <h1>Payouts</h1>
+    <p>
+      Ask guests for a deposit when they book, so no-shows don't cost you.
+      Deposits are paid through Stripe and go straight to your bank account.
+    </p>
+  </header>
+
+  <section class="payout-status">
+    <% if !@stripe_enabled %>
+      <p class="empty-state">Payments aren't switched on for this Bookem site yet.</p>
+    <% elsif current_user.payouts_ready? %>
+      <p class="status-line"><span class="status-badge status-confirmed">Ready</span> Your Stripe account can take deposits.</p>
+      <p>Choose a deposit amount on each location's edit page.</p>
+    <% elsif current_user.stripe_account_id.present? %>
+      <p class="status-line"><span class="status-badge status-pending">Almost there</span> Stripe needs a few more details before you can take deposits.</p>
+      <%= button_to "Continue setup with Stripe", connect_payouts_path, class: "button", data: { turbo: false } %>
+    <% else %>
+      <p>Stripe will ask for your name, bank details and a few identity questions. It takes about five minutes.</p>
+      <%= button_to "Set up payouts with Stripe", connect_payouts_path, class: "button", data: { turbo: false } %>
+    <% end %>
+  </section>
+
+  <section class="setup-section">
+    <h2>How deposits work</h2>
+    <ul class="plain-list">
+      <li>The guest pays the deposit when they request a time. The time is held for them while they pay.</li>
+      <li>You see the request once it's paid, then confirm or decline it as usual.</li>
+      <li>If you decline or cancel, the guest gets the whole deposit back.</li>
+      <li>If the guest cancels at least 24 hours ahead, they get it back. Later than that, you keep it.</li>
+      <li>Bookem keeps <%= number_to_percentage(Deposits.platform_fee_percent, precision: 0) %> + <%= money_label(Deposits.platform_fee_fixed_cents) %> of each deposit. That includes the card processing fee; there's nothing else to pay.</li>
+    </ul>
+  </section>
+</div>

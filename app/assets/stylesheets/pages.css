@@ -452,6 +452,20 @@ select {
 .setup-add-inline { margin-top: 0.5rem; }
 .booking-extra { margin: 0.2rem 0; color: var(--ink-soft); }
 
+/* ---- Deposits and payouts ---- */
+
+.deposit-note {
+  background: var(--marigold-tint);
+  color: var(--marigold-ink);
+  border-radius: var(--radius-small);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+  margin: 0.5rem 0 0.75rem;
+}
+.status-line { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.payout-status { margin-bottom: 2rem; }
+.plain-list { padding-left: 1.2rem; }
+.plain-list li { margin-bottom: 0.4rem; }
 /* Resource rows: name, Rename and Remove on one line. */
 .setup-list > li:has(> .setup-inline) { flex-wrap: nowrap; }
 .setup-list > li > .setup-inline {

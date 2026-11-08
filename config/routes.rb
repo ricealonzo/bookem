@@ -15,8 +15,19 @@ Rails.application.routes.draw do
       patch :confirm
       patch :decline
       patch :cancel
+      post :pay
     end
   end
+
+  # Hosts connect a Stripe account so deposits are paid out to them.
+  resource :payouts, only: :show do
+    post :connect
+    get :done
+    get :refresh
+  end
+
+  # Stripe tells Bookem when a deposit is paid or a payment page expires.
+  post "stripe/webhook", to: "stripe_webhooks#create", as: :stripe_webhook
 
   root to: "locations#index"
 end

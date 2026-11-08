@@ -12,6 +12,7 @@ Built with Ruby 3.4 and Rails 8.1, PostgreSQL, Devise, Pundit, Stimulus and Clou
 - **Host-set hours.** Each host chooses which days the location is open, the opening and closing times, and a slot length (30 minutes to 8 hours). Guests can only book inside those hours, in whole slots, and the server enforces it.
 - **Availability calendar and day view.** The month view shows how many slots are open each day, or *Booked up* or *Closed*. Choosing a day lists its time slots as Open, Requested, Booked or Past. Guests select a slot, or a run of back-to-back slots, and send the request from the same panel. Visitors can browse open times, and hosts see who booked each slot. The public never sees who booked.
 - **Services and resources.** Hosts list services with a set length and price ("Fade, 1 hr, $35"), and the rooms, chairs or people that get booked ("Studio A", "Marcus"). Each resource has its own calendar, so a shop with three barbers takes three bookings at once. Guests pick a service, optionally pick who or what they want, and choose a start time. See [the lesson](docs/lessons/01-services-and-resources.md).
+- **Deposits through Stripe.** Hosts connect a Stripe account (Stripe Connect Express) and choose a deposit per location: none, 25%, 50% or the full price. Guests pay on Stripe's checkout page and the time is held for 35 minutes while they pay. Declined or host-cancelled bookings are refunded automatically, and guests are refunded if they cancel at least 24 hours ahead. Bookem keeps a small platform fee. See [the lesson](docs/lessons/02-stripe-deposits.md).
 - **Host approval.** Requests start as *pending*. The host confirms or declines them from the Bookings page.
 - **Cancel any time before it starts.** Either side can cancel. Bookings are never deleted, so both sides keep a record.
 - **One Bookings page:** requests waiting for your reply come first, with Confirm and Decline on each card, then your upcoming bookings, what's coming up at your locations, and a folded-away history.
@@ -72,8 +73,14 @@ Set these environment variables (on Render: the service's **Environment** page):
 | `CLOUDINARY_URL` | Photo storage, e.g. `cloudinary://KEY:SECRET@CLOUD_NAME` |
 | `MAPBOX_ACCESS_TOKEN` | Maps on location pages |
 | `WEB_RAKE_USERNAME` / `WEB_RAKE_PASSWORD` | Login for the admin task runner at `/rails/tasks` |
+| `STRIPE_SECRET_KEY` | Turns deposits on. Use an `sk_test_...` key until you're ready for real money |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret of the webhook for your own account's events (`checkout.session.*`) |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | Signing secret of the webhook for connected accounts' events (`account.updated`) |
+| `PLATFORM_FEE_PERCENT` / `PLATFORM_FEE_FIXED_CENTS` | Bookem's cut of each deposit. Defaults: 5% + 50 cents |
 
 If `CLOUDINARY_URL` isn't set, photos are saved to local disk. That's fine for development, but on Render they disappear on each deploy.
+
+If `STRIPE_SECRET_KEY` isn't set, deposits are off and booking works without payment. Both webhooks point at `https://YOUR-SITE/stripe/webhook`.
 
 ## Data model
 
@@ -84,7 +91,7 @@ If `CLOUDINARY_URL` isn't set, photos are saved to local disk. That's fine for d
 - **OpeningHour** — one open day of the week for a location, with opening and closing times.
 - **Resource** — the room, chair or person that gets booked. Every location has at least one ("Main space" to start).
 - **Service** — something guests can book at a location, with a length (whole slots) and a price in cents.
-- **Booking** — belongs to a guest, a location and a resource, and optionally a service, with a start, an end, the price and a status (`pending`, `confirmed`, `declined` or `cancelled`).
+- **Booking** — belongs to a guest, a location and a resource, and optionally a service, with a start, an end, the price, a status (`pending`, `confirmed`, `declined` or `cancelled`) and a deposit status (`not_required`, `awaiting`, `paid`, `refunded` or `expired`).
 
 ## Deployment
 

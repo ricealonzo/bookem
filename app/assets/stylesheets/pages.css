@@ -467,8 +467,15 @@ select {
 .plain-list { padding-left: 1.2rem; }
 .plain-list li { margin-bottom: 0.4rem; }
 /* Resource rows: name, Rename and Remove on one line. */
-.setup-list > li > .setup-inline { flex: 1 1 16rem; flex-wrap: nowrap; }
-.setup-inline input[type="text"] { width: auto; flex: 1 1 10rem; min-width: 0; }
+.setup-list > li:has(> .setup-inline) { flex-wrap: nowrap; }
+.setup-list > li > .setup-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.setup-inline input[type="text"] { width: 100%; min-width: 0; }
 .setup-inline .button,
 .setup-list form.button_to .button { width: auto; white-space: nowrap; }
 .setup-list form.button_to { margin: 0; }

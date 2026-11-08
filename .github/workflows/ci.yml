@@ -91,8 +91,9 @@ jobs:
       - name: Build the old database
         run: bin/rails db:create db:migrate VERSION=20260216000001
 
-      - name: Add bookings with text times
+      - name: Add a location and bookings with text times
         run: |
+          bin/rails runner 'ActiveRecord::Base.connection.execute("INSERT INTO locations (id, name, host_id, created_at, updated_at) VALUES (1, $$Old Studio$$, 1, NOW(), NOW())")'
           bin/rails runner 'ActiveRecord::Base.connection.execute("INSERT INTO bookings (started_at, ended_at, guest_id, location_id, created_at, updated_at) VALUES ($$2030-01-15T10:00$$, $$2030-01-15T12:00$$, 1, 1, NOW(), NOW()), ($$not a date$$, $$also not$$, 1, 1, NOW(), NOW())")'
 
       - name: Run the new migrations
@@ -174,6 +175,8 @@ jobs:
           bin/rails db:create db:schema:load
           bin/rails sample_data
           echo "HOST_EMAIL=$(bin/rails runner 'id = Booking.joins(:location).group("locations.host_id").count.max_by { |_, c| c }&.first; puts User.find(id).email if id')" >> "$GITHUB_ENV"
+          echo "BARBER_LOCATION=$(bin/rails runner 'puts Location.find_by(name: "Riverside Barbershop")&.id')" >> "$GITHUB_ENV"
+          echo "BARBER_HOST_EMAIL=$(bin/rails runner 'puts Location.find_by(name: "Riverside Barbershop")&.host&.email')" >> "$GITHUB_ENV"
           echo "HOST_LOCATION=$(bin/rails runner 'id = Booking.joins(:location).group("locations.host_id").count.max_by { |_, c| c }&.first; puts Location.where(host_id: id).first&.id if id')" >> "$GITHUB_ENV"
 
       - name: Start the app

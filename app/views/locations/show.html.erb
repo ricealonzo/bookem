@@ -20,11 +20,41 @@
         <p class="location-description"><%= @location.description %></p>
       <% end %>
 
+      <% if @location.uses_services? %>
+        <section class="service-menu" aria-labelledby="services-heading">
+          <h2 id="services-heading">Services</h2>
+          <ul class="service-list">
+            <% @location.active_services.each do |service| %>
+              <li>
+                <div>
+                  <strong><%= service.name %></strong>
+                  <span class="service-length"><%= duration_label(service.duration_minutes) %></span>
+                  <% if service.description.present? %><p><%= service.description %></p><% end %>
+                </div>
+                <span class="service-price"><%= money_label(service.price_cents) %></span>
+              </li>
+            <% end %>
+          </ul>
+        </section>
+      <% end %>
+
       <dl class="location-facts">
         <div>
           <dt>Address</dt>
           <dd><%= @location.full_address.presence || "Not listed" %></dd>
         </div>
+        <% if @location.choose_resource? %>
+          <div>
+            <dt><%= @location.resource_label.pluralize %></dt>
+            <dd><%= @location.active_resources.map(&:name).to_sentence %></dd>
+          </div>
+        <% end %>
+        <% if !@location.uses_services? && @location.slot_price_cents.positive? %>
+          <div>
+            <dt>Price</dt>
+            <dd><%= money_label(@location.slot_price_cents) %> per <%= slot_length_label(@location.slot_minutes).delete_prefix("1 ") %></dd>
+          </div>
+        <% end %>
         <div>
           <dt>Hosted by</dt>
           <dd><%= @location.host.full_name.presence || "Bookem host" %><%= " (#{@location.host.organization})" if @location.host.organization.present? %></dd>
@@ -61,6 +91,7 @@
         <p>Guests' requests show up on your <%= link_to "Bookings", bookings_path %> page, where you can confirm or decline them.</p>
         <div class="panel-actions">
           <% if policy(@location).update? %>
+            <%= link_to "Services and #{@location.resource_label_plural}", location_services_path(@location), class: "button button-quiet" %>
             <%= link_to "Edit location and hours", edit_location_path(@location), class: "button button-quiet" %>
           <% end %>
           <% if policy(@location).destroy? %>
@@ -90,10 +121,22 @@
       <% pickable = current_user.present? && !@location.hosted_by?(current_user) %>
       <% month_start = calendar_month_start(params[:start_date]) %>
       <% visible_days = (month_start.beginning_of_week..month_start.end_of_month.end_of_week) %>
-      <% schedules = visible_days.select { |d| d >= Date.current }.index_with { |d| @location.schedule_for(d, @bookings) } %>
+      <% schedules = visible_days.select { |d| d >= Date.current }.index_with { |d| @location.schedule_for(d, @bookings, resource: @resource) } %>
 
       <div class="availability-layout" data-controller="booking-picker"
            data-booking-picker-selected-date-value="<%= @selected_date&.iso8601 %>">
+        <% if @location.choose_resource? %>
+          <%# Changing this reloads the calendar with only that resource's times. %>
+          <%= form_with url: location_path(@location), method: :get, class: "resource-filter",
+                data: { turbo_frame: "bookings_calendar", booking_picker_target: "filter" } do |form| %>
+            <%= form.hidden_field :start_date, value: params[:start_date] %>
+            <%= form.hidden_field :date, value: @selected_date&.iso8601, data: { booking_picker_target: "dateInput" } %>
+            <%= form.label :resource_id, @location.resource_label %>
+            <%= form.select :resource_id,
+                  options_for_select([ [ "Any available", "" ] ] + @location.active_resources.map { |r| [ r.name, r.id ] }, @resource&.id),
+                  {}, data: { action: "change->booking-picker#filterResource" } %>
+          <% end %>
+        <% end %>
         <div class="availability-calendar">
           <%= month_calendar(events: @bookings, attribute: :started_at, end_attribute: :ended_at) do |date, _bookings| %>
             <% schedule = schedules[date] %>
@@ -128,11 +171,27 @@
           <% if pickable %>
             <%= form_with url: bookings_path, scope: :booking, class: "slot-request", data: { turbo: false } do |form| %>
               <%= form.hidden_field :location_id, value: @location.id %>
+              <%= form.hidden_field :resource_id, value: @resource&.id %>
+              <% if @location.uses_services? %>
+                <div class="field">
+                  <%= form.label :service_id, "Service" %>
+                  <%= form.select :service_id,
+                        options_for_select(@location.active_services.map { |service|
+                          [ "#{service.name} (#{duration_label(service.duration_minutes)}, #{money_label(service.price_cents)})", service.id,
+                            { data: { slots: service.slot_count, name: service.name } } ]
+                        }),
+                        { prompt: "Choose a service" },
+                        required: true, data: { booking_picker_target: "service", action: "change->booking-picker#changeService" } %>
+                </div>
+              <% end %>
               <%= form.hidden_field :started_at, data: { booking_picker_target: "startInput" } %>
               <%= form.hidden_field :ended_at, data: { booking_picker_target: "endInput" } %>
               <p class="selection-summary" data-booking-picker-target="summary">No time selected yet.</p>
               <%= form.submit "Request Booking", class: "button button-wide", disabled: true, data: { booking_picker_target: "submit" } %>
-              <p class="form-hint">The host confirms or declines your request. You can cancel any time before it starts.</p>
+              <p class="form-hint">
+                <% if @location.uses_services? %>Choose a service, then the time it starts. <% end %>
+                The host confirms or declines your request. You can cancel any time before it starts.
+              </p>
             <% end %>
           <% elsif current_user.nil? %>
             <p class="day-panel-note"><%= link_to "Log in", new_user_session_path %> or <%= link_to "sign up", new_user_registration_path %> to request a booking.</p>

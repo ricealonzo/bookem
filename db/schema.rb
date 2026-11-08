@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_28_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,8 +22,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_150000) do
     t.datetime "started_at"
     t.datetime "ended_at"
     t.string "status", default: "pending", null: false
+    t.bigint "resource_id"
+    t.bigint "service_id"
+    t.integer "price_cents", default: 0, null: false
     t.index ["guest_id"], name: "index_bookings_on_guest_id"
     t.index ["location_id", "started_at"], name: "index_bookings_on_location_id_and_started_at"
+    t.index ["resource_id", "started_at"], name: "index_bookings_on_resource_id_and_started_at"
+    t.index ["service_id"], name: "index_bookings_on_service_id"
   end
 
   create_table "locations", force: :cascade do |t|
@@ -38,6 +43,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_150000) do
     t.datetime "updated_at", null: false
     t.string "image"
     t.integer "slot_minutes", default: 60, null: false
+    t.string "resource_label", default: "Room", null: false
+    t.integer "slot_price_cents", default: 0, null: false
     t.index ["host_id"], name: "index_locations_on_host_id"
   end
 
@@ -49,6 +56,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_150000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["location_id", "weekday"], name: "index_opening_hours_on_location_id_and_weekday", unique: true
+  end
+
+  create_table "resources", force: :cascade do |t|
+    t.bigint "location_id", null: false
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["location_id", "position"], name: "index_resources_on_location_id_and_position"
+  end
+
+  create_table "services", force: :cascade do |t|
+    t.bigint "location_id", null: false
+    t.string "name", null: false
+    t.string "description"
+    t.integer "duration_minutes", null: false
+    t.integer "price_cents", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["location_id"], name: "index_services_on_location_id"
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|
@@ -212,7 +241,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_150000) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "bookings", "resources"
+  add_foreign_key "bookings", "services", on_delete: :nullify
   add_foreign_key "opening_hours", "locations", on_delete: :cascade
+  add_foreign_key "resources", "locations", on_delete: :cascade
+  add_foreign_key "services", "locations", on_delete: :cascade
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

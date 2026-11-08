@@ -14,6 +14,9 @@ module SampleData
       postal_code: "94114",
       image_file: "studio.jpg",
       slot_minutes: 120,
+      slot_price_cents: 9000,
+      resource_label: "Studio",
+      resources: [ "Studio A", "Studio B" ],
       hours: { days: 1..6, opens: "09:00", closes: "21:00" }
     },
     {
@@ -36,6 +39,13 @@ module SampleData
       postal_code: "78704",
       image_file: "barbershop.jpg",
       slot_minutes: 30,
+      resource_label: "Barber",
+      resources: [ "Marcus", "Dee", "Tony" ],
+      services: [
+        { name: "Haircut", duration_minutes: 30, price_cents: 3000 },
+        { name: "Fade and beard trim", duration_minutes: 60, price_cents: 4500 },
+        { name: "Kids cut", duration_minutes: 30, price_cents: 2000 }
+      ],
       hours: { days: 2..6, opens: "09:00", closes: "18:00" }
     },
     {
@@ -47,6 +57,13 @@ module SampleData
       postal_code: "94112",
       image_file: "salon.jpg",
       slot_minutes: 60,
+      resource_label: "Stylist",
+      resources: [ "Aisha", "Renee" ],
+      services: [
+        { name: "Silk press", duration_minutes: 120, price_cents: 8500, description: "Wash, blow-dry and press" },
+        { name: "Braids", duration_minutes: 240, price_cents: 18000 },
+        { name: "Trim", duration_minutes: 60, price_cents: 3500 }
+      ],
       hours: { days: 2..6, opens: "10:00", closes: "19:00" }
     },
     {
@@ -92,9 +109,22 @@ module SampleData
     File.open(path)
   end
 
+  # Renames the default resource and adds the rest, plus any services.
+  def self.add_resources_and_services(location, sample)
+    names = sample[:resources] || []
+    location.resources.first.update!(name: names.first) if names.any?
+    names.drop(1).each_with_index do |name, index|
+      location.resources.create!(name: name, position: index + 1)
+    end
+    (sample[:services] || []).each { |attrs| location.services.create!(attrs) }
+    location.reload
+  end
+
   def self.load!(reset: true)
     if reset
       Booking.delete_all
+      Service.delete_all
+      Resource.delete_all
       Location.delete_all
       User.delete_all
     end
@@ -133,12 +163,14 @@ module SampleData
         postal_code: location[:postal_code],
         image: sample_image_file(location[:image_file]),
         slot_minutes: location[:slot_minutes],
+        slot_price_cents: location.fetch(:slot_price_cents, 0),
+        resource_label: location.fetch(:resource_label, "Room"),
         weekly_hours: weekly_hours(location[:hours]),
         host: hosts.sample
-      )
+      ).tap { |created| add_resources_and_services(created, location) }
     end
 
-    # Random future bookings of one to three slots. Ones that clash with an
+    # Random future bookings of one to three slots, or one service. Ones that clash with an
     # earlier booking are skipped, since the app doesn't allow double-booking.
     BOOKING_COUNT.times do
       location = locations.sample
@@ -151,6 +183,7 @@ module SampleData
       Booking.new(
         location: location,
         guest: guests.sample,
+        service: location.active_services.sample,
         started_at: slots[first].starts_at,
         ended_at: slots[last].ends_at,
         status: %w[pending confirmed confirmed].sample

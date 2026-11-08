@@ -12,6 +12,14 @@
     <% end %>
   </p>
 
+  <% details = [] %>
+  <% details << booking.service.name if booking.service %>
+  <% details << "#{booking.location.resource_label}: #{booking.resource.name}" if booking.resource && booking.resource.name != Resource::DEFAULT_NAME %>
+  <% details << booking.price_label if booking.price_label %>
+  <% if details.any? %>
+    <p class="booking-extra"><%= details.join(" · ") %></p>
+  <% end %>
+
   <p class="booking-who">
     <% if booking.location.hosted_by?(current_user) %>
       Guest: <%= booking.guest.full_name.presence || "Guest" %> (<%= mail_to booking.guest.email %>)

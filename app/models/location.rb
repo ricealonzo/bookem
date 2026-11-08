@@ -9,21 +9,27 @@
 #  image       :string
 #  name        :string
 #  postal_code :string
+#  resource_label :string        default("Room"), not null
 #  slot_minutes :integer         default(60), not null
+#  slot_price_cents :integer     default(0), not null
 #  state       :string
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
 #  host_id     :integer
 #
 class Location < ApplicationRecord
+  include MoneyField
+  money_field :slot_price
+
   # Slot lengths a host can choose, in minutes.
   SLOT_LENGTHS = [ 30, 60, 90, 120, 180, 240, 480 ].freeze
 
   # Hours a new location starts with: Monday to Friday, 9 AM to 5 PM.
   DEFAULT_HOURS = (1..5).map { |weekday| { weekday: weekday, opens_at_minute: 540, closes_at_minute: 1020 } }.freeze
 
-  # One time slot on one day, and what's happening in it.
-  Slot = Struct.new(:starts_at, :ends_at, :state, :booking, keyword_init: true) do
+  # One time slot on one day, and what's happening in it. free_count is how
+  # many resources are still free in it.
+  Slot = Struct.new(:starts_at, :ends_at, :state, :booking, :free_count, keyword_init: true) do
     def open? = state == :open
   end
 
@@ -34,16 +40,23 @@ class Location < ApplicationRecord
   validates :state, presence: true
   validates :postal_code, presence: true
   validates :slot_minutes, inclusion: { in: SLOT_LENGTHS, message: "isn't one of the offered lengths" }
+  validates :resource_label, presence: true, length: { maximum: 30 }
+  validates :slot_price_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :open_at_least_one_day
+  validate :services_fit_the_slots, if: :slot_minutes_changed?
 
   belongs_to :host, class_name: "User", foreign_key: "host_id", counter_cache: true
 
   has_many :bookings, class_name: "Booking", foreign_key: "location_id", dependent: :destroy
   has_many :opening_hours, -> { order(:weekday) }, dependent: :destroy, autosave: true, inverse_of: :location
+  # Declared after bookings so bookings are removed first when a location is deleted.
+  has_many :resources, -> { order(:position, :id) }, dependent: :destroy, inverse_of: :location
+  has_many :services, -> { order(:id) }, dependent: :destroy, inverse_of: :location
 
   mount_uploader :image, ImageUploader
 
   before_validation :apply_default_hours, on: :create
+  before_validation :add_default_resource, on: :create
 
   def full_address
     [ address, city, state, postal_code ].compact_blank.join(", ")
@@ -51,6 +64,29 @@ class Location < ApplicationRecord
 
   def hosted_by?(user)
     user.present? && host_id == user.id
+  end
+
+  def active_resources
+    resources.select(&:active?)
+  end
+
+  def active_services
+    services.select(&:active?)
+  end
+
+  # Guests pick a service when the location offers any.
+  def uses_services?
+    active_services.any?
+  end
+
+  # Guests choose who or what to book with when there's more than one.
+  def choose_resource?
+    active_resources.size > 1
+  end
+
+  # "Barber" => "barbers", for headings like "Your barbers".
+  def resource_label_plural
+    resource_label.to_s.downcase.pluralize
   end
 
   # Opening hours that will still exist after saving.
@@ -102,15 +138,25 @@ class Location < ApplicationRecord
   end
 
   # Each slot on a date with its state: :past, :booked, :requested or :open.
+  # A slot is open while at least one resource is free in it. Pass a resource
+  # to see only that resource's calendar.
   # Pass the location's active bookings to avoid a query per day.
-  def schedule_for(date, active_bookings = bookings.active.to_a, now: Time.current)
+  def schedule_for(date, active_bookings = bookings.active.to_a, resource: nil, now: Time.current)
+    pool = resource ? [ resource.id ] : active_resources.map(&:id)
+
     slots_for(date).each do |slot|
-      booking = active_bookings.detect { |b| b.started_at < slot.ends_at && b.ended_at > slot.starts_at }
-      slot.booking = booking
+      taken = active_bookings.select do |b|
+        pool.include?(b.resource_id) && b.started_at < slot.ends_at && b.ended_at > slot.starts_at
+      end
+      free = pool.size - taken.map(&:resource_id).uniq.size
+      full = free <= 0
+
+      slot.free_count = [ free, 0 ].max
+      slot.booking = taken.first if full
       slot.state =
         if slot.starts_at <= now then :past
-        elsif booking&.confirmed? then :booked
-        elsif booking then :requested
+        elsif full && taken.all?(&:confirmed?) then :booked
+        elsif full then :requested
         else :open
         end
     end
@@ -146,6 +192,19 @@ class Location < ApplicationRecord
     return if @weekly_hours_given || opening_hours.any?
 
     DEFAULT_HOURS.each { |attrs| opening_hours.build(attrs) }
+  end
+
+  def add_default_resource
+    resources.build(name: Resource::DEFAULT_NAME) if resources.empty?
+  end
+
+  # Changing the slot length can't leave a service that no longer lines up.
+  def services_fit_the_slots
+    active_services.each do |service|
+      next if (service.duration_minutes % slot_minutes).zero?
+
+      errors.add(:slot_minutes, "doesn't fit the #{service.name} service (#{service.duration_minutes} minutes)")
+    end
   end
 
   def open_at_least_one_day

@@ -92,5 +92,23 @@
     <p class="field-hint">Set "Until" to 12:00 AM to stay open until midnight.</p>
   </fieldset>
 
+  <fieldset class="form-group">
+    <legend>Pricing and booking</legend>
+
+    <div class="field-row">
+      <div class="field">
+        <%= form.label :slot_price_dollars, "Price per slot ($)" %>
+        <%= form.text_field :slot_price_dollars, inputmode: "decimal", placeholder: "0.00" %>
+        <p class="field-hint">Used when guests book open time. Leave at 0 for free. Services set their own prices.</p>
+      </div>
+
+      <div class="field">
+        <%= form.label :resource_label, "What guests book" %>
+        <%= form.text_field :resource_label, required: true, maxlength: 30, placeholder: "Room, Chair, Barber, Stylist" %>
+        <p class="field-hint">One word, like Room, Chair or Barber. You add each one on the services page.</p>
+      </div>
+    </div>
+  </fieldset>
+
   <%= form.submit location.persisted? ? "Save Changes" : "List This Space", class: "button" %>
 <% end %>

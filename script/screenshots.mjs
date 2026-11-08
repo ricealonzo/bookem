@@ -62,6 +62,26 @@ for (const [label, viewport] of Object.entries(sizes)) {
       await page.locator("#availability").screenshot({ path: `${out}/availability-guest-${suffix}.png` })
       console.log(`saved availability-guest-${suffix}`)
 
+      // A location with services and several barbers: pick a service, then a start.
+      if (process.env.BARBER_LOCATION) {
+        await page.goto(`${base}/locations/${process.env.BARBER_LOCATION}`)
+        const service = page.locator("#booking_service_id")
+        if (await service.count()) {
+          await service.selectOption({ index: 2 })
+          const barberDays = page.locator(".day-pick")
+          for (let i = 0; i < Math.min(await barberDays.count(), 10); i++) {
+            await barberDays.nth(i).click()
+            const open = page.locator(".day-view:not([hidden]) button.slot-open")
+            if (await open.count() >= 4) {
+              await open.nth(2).click()
+              break
+            }
+          }
+          await page.waitForTimeout(400)
+          await shoot(page, `service-guest-${suffix}`)
+        }
+      }
+
       await page.goto(`${base}/bookings`)
       await shoot(page, `bookings-guest-${suffix}`)
 
@@ -85,6 +105,13 @@ for (const [label, viewport] of Object.entries(sizes)) {
       if (process.env.HOST_LOCATION) {
         await page.goto(`${base}/locations/${process.env.HOST_LOCATION}/edit`)
         await shoot(page, `edit-hours-${suffix}`)
+      }
+
+      if (process.env.BARBER_HOST_EMAIL && process.env.BARBER_LOCATION) {
+        await context.clearCookies()
+        await logIn(page, process.env.BARBER_HOST_EMAIL)
+        await page.goto(`${base}/locations/${process.env.BARBER_LOCATION}/services`)
+        await shoot(page, `setup-host-${suffix}`)
       }
     }
 

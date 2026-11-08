@@ -1,7 +1,12 @@
 Rails.application.routes.draw do
   devise_for :users
 
-  resources :locations
+  resources :locations do
+    # The host's setup: services guests can book, and the rooms, chairs or
+    # people that get booked.
+    resources :services, only: %i[ index create update destroy ]
+    resources :resources, only: %i[ create update destroy ]
+  end
 
   # Bookings are never deleted: they're confirmed, declined or cancelled so
   # both the guest and the host keep a record.

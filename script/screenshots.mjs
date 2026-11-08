@@ -40,6 +40,9 @@ for (const [label, viewport] of Object.entries(sizes)) {
     await page.goto(`${base}${firstLocation}`)
     await shoot(page, `location-visitor-${suffix}`)
 
+    await page.goto(`${base}/for/barbershop`)
+    await shoot(page, `landing-barbershop-${suffix}`)
+
     if (theme === "light") {
       await page.goto(`${base}/users/sign_in`)
       await shoot(page, `login-${suffix}`, false)
@@ -87,6 +90,8 @@ for (const [label, viewport] of Object.entries(sizes)) {
 
       await page.goto(`${base}/locations/new`)
       await shoot(page, `new-location-${suffix}`)
+      await page.goto(`${base}/locations/new?type=recording_studio`)
+      await shoot(page, `new-studio-${suffix}`)
 
       // Submit the slot request and show the result.
       await page.goto(`${base}${firstLocation}`)
@@ -112,6 +117,8 @@ for (const [label, viewport] of Object.entries(sizes)) {
         await logIn(page, process.env.BARBER_HOST_EMAIL)
         await page.goto(`${base}/locations/${process.env.BARBER_LOCATION}/services`)
         await shoot(page, `setup-host-${suffix}`)
+        await page.goto(`${base}/locations/${process.env.BARBER_LOCATION}`)
+        await shoot(page, `location-host-${suffix}`, false)
         await page.goto(`${base}/payouts`)
         await shoot(page, `payouts-host-${suffix}`)
       }

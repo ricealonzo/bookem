@@ -39,6 +39,16 @@
   </ol>
 </section>
 
+<section class="for-owners" aria-labelledby="owners-heading">
+  <h2 id="owners-heading">Run a shop or studio?</h2>
+  <p>Take bookings and deposits online, with a calendar for every chair, room or artist.</p>
+  <ul class="owner-links">
+    <% BusinessType.all.each do |type| %>
+      <li><%= link_to type.plural.capitalize, business_type_path(type.key) %></li>
+    <% end %>
+  </ul>
+</section>
+
 <section id="locations" class="locations" aria-labelledby="locations-heading">
   <div class="section-heading">
     <h2 id="locations-heading">Places to book</h2>

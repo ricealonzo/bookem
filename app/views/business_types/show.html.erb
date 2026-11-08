@@ -1,0 +1,58 @@
+<% type = @business_type %>
+<% content_for :title, "Bookem for #{type.plural}" %>
+
+<article class="narrow landing">
+  <header class="page-header">
+    <p class="eyebrow">Bookem for <%= type.plural %></p>
+    <h1><%= type.headline %></h1>
+    <p class="landing-pain"><%= type.pain %></p>
+    <div class="hero-actions">
+      <%= link_to "List your #{type.name.downcase}", new_location_path(type: type.key), class: "button" %>
+      <% if @example %>
+        <%= link_to "See an example", @example, class: "button button-quiet" %>
+      <% end %>
+    </div>
+  </header>
+
+  <section class="setup-section" aria-labelledby="perks-heading">
+    <h2 id="perks-heading">What you get</h2>
+    <ul class="perk-list">
+      <% type.perks.each do |perk| %>
+        <li><%= perk %></li>
+      <% end %>
+      <li>Your own booking link to share: <%= request.host %>/b/your-<%= type.key.dasherize %></li>
+    </ul>
+  </section>
+
+  <section class="setup-section" aria-labelledby="setup-heading">
+    <h2 id="setup-heading">Ready in a few minutes</h2>
+    <p>
+      You start with <%= slot_length_adjective(type.slot_minutes) %> slots and one <%= type.resource_label.downcase %>.
+      Add your other <%= type.resource_label.downcase.pluralize %>, change your hours, and you're taking bookings.
+    </p>
+    <% if type.services.any? %>
+      <p>Starter services you can rename and reprice:</p>
+      <ul class="service-list">
+        <% type.services.each do |service| %>
+          <li>
+            <div><strong><%= service[:name] %></strong> <span class="service-length"><%= duration_label(service[:duration_minutes]) %></span></div>
+            <span class="service-price"><%= money_label(service[:price_cents]) %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% elsif type.slot_price_cents.positive? %>
+      <p>Customers book any run of open time, priced per slot (starting at <%= money_label(type.slot_price_cents) %>; set your own).</p>
+    <% end %>
+  </section>
+
+  <section class="setup-section" aria-labelledby="cost-heading">
+    <h2 id="cost-heading">What it costs</h2>
+    <p>
+      Listing is free. If you take deposits, Bookem keeps
+      <%= number_to_percentage(Deposits.platform_fee_percent, precision: 0) %> + <%= money_label(Deposits.platform_fee_fixed_cents) %>
+      of each one, card fees included. The rest goes to your bank through Stripe.
+    </p>
+  </section>
+
+  <p class="back-link"><%= link_to "Other kinds of business", business_types_path %></p>
+</article>

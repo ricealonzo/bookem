@@ -88,6 +88,15 @@
       </table>
 
       <% if @location.hosted_by?(current_user) %>
+        <% link = booking_page_url(@location.slug) if @location.slug.present? %>
+        <% if link %>
+          <div class="share-link" data-controller="clipboard" data-clipboard-text-value="<%= link %>">
+            <p class="share-label">Your booking link</p>
+            <p class="share-url"><%= link_to link.sub(%r{\Ahttps?://}, ""), link %></p>
+            <button type="button" class="button button-small" data-clipboard-target="button" data-action="clipboard#copy">Copy link</button>
+            <p class="field-hint">Put it in your Instagram bio, Google profile or texts to clients.</p>
+          </div>
+        <% end %>
         <p>Guests' requests show up on your <%= link_to "Bookings", bookings_path %> page, where you can confirm or decline them.</p>
         <div class="panel-actions">
           <% if policy(@location).update? %>

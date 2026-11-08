@@ -7,6 +7,7 @@ module SampleData
   LOCATIONS = [
     {
       name: "Northside Creative Studio",
+      business_type: "photo_studio",
       description: "Bright, flexible studio for photo, video, and small workshops.",
       address: "2140 Market St",
       city: "San Francisco",
@@ -21,6 +22,7 @@ module SampleData
     },
     {
       name: "Downtown Event Loft",
+      business_type: "event_space",
       description: "Open-plan event space with lounge seating and modular layouts.",
       address: "825 W Jackson Blvd",
       city: "Chicago",
@@ -32,6 +34,7 @@ module SampleData
     },
     {
       name: "Riverside Barbershop",
+      business_type: "barbershop",
       description: "Modern barbershop with multiple stations and waiting area.",
       address: "310 S 1st St",
       city: "Austin",
@@ -50,6 +53,7 @@ module SampleData
     },
     {
       name: "Sunset Beauty Salon",
+      business_type: "salon",
       description: "Full-service salon with styling chairs and wash stations.",
       address: "4889 Mission St",
       city: "San Francisco",
@@ -68,6 +72,7 @@ module SampleData
     },
     {
       name: "Brickhouse Photo Studio",
+      business_type: "photo_studio",
       description: "Cyclorama wall, grip gear, and natural light for shoots.",
       address: "1200 E 6th St",
       city: "Los Angeles",
@@ -165,6 +170,7 @@ module SampleData
         slot_minutes: location[:slot_minutes],
         slot_price_cents: location.fetch(:slot_price_cents, 0),
         resource_label: location.fetch(:resource_label, "Room"),
+        business_type: location.fetch(:business_type, "other"),
         weekly_hours: weekly_hours(location[:hours]),
         host: hosts.sample
       ).tap { |created| add_resources_and_services(created, location) }

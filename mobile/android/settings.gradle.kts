@@ -1,6 +1,11 @@
+// Google's copy of Maven Central comes first: the Kotlin compiler jar on
+// Maven Central redirects to GitHub, which sometimes times out on CI.
+val mavenCentralMirror = "https://maven-central.storage-download.googleapis.com/maven2/"
+
 pluginManagement {
     repositories {
         google()
+        maven("https://maven-central.storage-download.googleapis.com/maven2/")
         mavenCentral()
         gradlePluginPortal()
     }
@@ -14,6 +19,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        maven(mavenCentralMirror)
         mavenCentral()
     }
 }

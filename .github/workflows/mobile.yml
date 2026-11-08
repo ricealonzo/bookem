@@ -1,0 +1,138 @@
+name: Mobile apps
+
+# Builds the iOS and Android apps whenever they change, so a mistake in the
+# Swift or Kotlin shows up here instead of on your laptop.
+on:
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  push:
+    branches: [ main ]
+    paths:
+      - "mobile/**"
+
+jobs:
+  ios:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: mobile/ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Pick an iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          phones = [d for runtime, ds in devices.items() if "iOS" in runtime for d in ds if d["name"].startswith("iPhone")]
+          print(phones[-1]["udid"])
+          ')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl list devices available | grep "$UDID"
+
+      - name: Build for the simulator
+        run: |
+          xcodebuild -project Bookem.xcodeproj -scheme Bookem -configuration Debug \
+            -destination "id=$UDID" -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          test -d build/Build/Products/Debug-iphonesimulator/Bookem.app
+
+      - name: Run it and take a screenshot
+        continue-on-error: true
+        run: |
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Bookem.app
+          xcrun simctl launch "$UDID" com.ricealonzo.bookem
+          sleep 45
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/ios-app.png"
+
+      # Published to the ci-mobile-ios branch so it can be viewed on GitHub.
+      - name: Publish the screenshot
+        if: always()
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}
+        run: |
+          test -f ios-app.png || exit 0
+          mkdir publish && cp ios-app.png publish/ && cd publish
+          git init -q -b ci-mobile-ios
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -q -m "iOS screenshot for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-mobile-ios
+
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: mobile/android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Downloads sometimes time out on GitHub's runners, so retry them.
+      - name: Install Gradle
+        run: |
+          for url in \
+            https://services.gradle.org/distributions/gradle-9.2.0-bin.zip \
+            https://github.com/gradle/gradle-distributions/releases/download/v9.2.0/gradle-9.2.0-bin.zip; do
+            curl -fsSL --retry 3 --retry-all-errors --retry-delay 10 -o "$RUNNER_TEMP/gradle.zip" "$url" && break
+            echo "::warning::Couldn't download Gradle from $url"
+          done
+          if [ -s "$RUNNER_TEMP/gradle.zip" ] && unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"; then
+            echo "$RUNNER_TEMP/gradle-9.2.0/bin" >> "$GITHUB_PATH"
+          else
+            echo "::warning::Using the Gradle already on the runner"
+            gradle --version
+          fi
+
+      # The Gradle wrapper (gradlew) lets anyone build with the right Gradle
+      # version. Make it if it isn't committed yet.
+      - name: Gradle wrapper
+        continue-on-error: true
+        run: |
+          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 9.2.0 --no-validate-url; fi
+
+      - name: Build the debug app
+        run: |
+          for attempt in 1 2 3; do
+            gradle assembleDebug --stacktrace && exit 0
+            echo "::warning::Build attempt $attempt failed; retrying in 20 seconds"
+            sleep 20
+          done
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Published to the ci-mobile-android branch: the generated Gradle wrapper,
+      # so it can be committed, and the debug app to install on a phone.
+      - name: Publish the wrapper and debug app
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/publish/gradle"
+          cp -r gradlew gradlew.bat gradle/wrapper "$RUNNER_TEMP/publish/"
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/publish/"
+          cd "$RUNNER_TEMP/publish" && mv wrapper gradle/
+          git init -q -b ci-mobile-android
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -f . && git commit -q -m "Android build for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-mobile-android

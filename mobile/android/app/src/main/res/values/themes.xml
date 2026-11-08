@@ -1,0 +1,7 @@
+<resources>
+    <!-- Material 3 with no action bar: each Hotwire screen brings its own toolbar. -->
+    <style name="Theme.Bookem" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/bookem_green</item>
+        <item name="colorSecondary">@color/bookem_marigold</item>
+    </style>
+</resources>

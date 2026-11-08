@@ -35,7 +35,12 @@ RSpec.describe StripeApi do
   end
 
   describe "requests" do
-    before { allow(ENV).to receive(:[]).and_call_original }
+    before do
+      allow(ENV).to receive(:[]).and_call_original
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+
+    after { WebMock.allow_net_connect! }
 
     it "refuses to call Stripe without a secret key" do
       allow(ENV).to receive(:[]).with("STRIPE_SECRET_KEY").and_return(nil)
@@ -44,9 +49,11 @@ RSpec.describe StripeApi do
 
     it "sends form-encoded nested parameters with the secret key" do
       allow(ENV).to receive(:[]).with("STRIPE_SECRET_KEY").and_return("sk_test_123")
+      # Rack reads line_items[0][quantity] back the way Stripe does.
       stub = stub_request(:post, "https://api.stripe.com/v1/things")
-        .with(headers: { "Authorization" => "Bearer sk_test_123", "Idempotency-Key" => "key-1" },
-              body: { "line_items" => { "0" => { "quantity" => "1" } } })
+        .with(headers: { "Authorization" => "Bearer sk_test_123", "Idempotency-Key" => "key-1" }) { |req|
+          Rack::Utils.parse_nested_query(req.body) == { "line_items" => { "0" => { "quantity" => "1" } } }
+        }
         .to_return(status: 200, body: { id: "thing_1" }.to_json)
 
       result = StripeApi.post("/v1/things", { line_items: { "0" => { quantity: 1 } } }, idempotency_key: "key-1")

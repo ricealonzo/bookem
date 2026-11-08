@@ -1,0 +1,52 @@
+<% content_for :title, "Account" %>
+
+<div class="narrow account-page">
+  <% if current_user %>
+    <header class="page-header">
+      <h1><%= current_user.full_name.presence || "Your account" %></h1>
+      <p><%= current_user.email %></p>
+    </header>
+
+    <ul class="account-list">
+      <li><%= link_to "Your bookings", bookings_path %></li>
+      <li><%= link_to "Edit profile", edit_user_registration_path %></li>
+      <li><%= link_to(current_user.payouts_ready? ? "Payouts" : "Set up deposits", payouts_path) %></li>
+    </ul>
+
+    <section class="setup-section" aria-labelledby="your-locations">
+      <h2 id="your-locations">Your locations</h2>
+      <% if @locations.any? %>
+        <ul class="account-list">
+          <% @locations.each do |location| %>
+            <li><%= link_to location.name, location %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p>You don't host any locations yet.</p>
+      <% end %>
+      <%= link_to "List your space", new_location_path, class: "button" %>
+    </section>
+
+    <ul class="account-list">
+      <li><%= link_to "Bookem for business owners", business_types_path %></li>
+      <li><%= link_to "Privacy", privacy_path %></li>
+    </ul>
+
+    <%= button_to "Sign out", destroy_user_session_path, method: :delete, class: "button button-quiet button-wide" %>
+  <% else %>
+    <header class="page-header">
+      <h1>Your account</h1>
+      <p>Log in to see your bookings, or sign up to book a time or list your space.</p>
+    </header>
+
+    <div class="account-actions">
+      <%= link_to "Log in", new_user_session_path, class: "button button-wide" %>
+      <%= link_to "Sign up", new_user_registration_path, class: "button button-quiet button-wide" %>
+    </div>
+
+    <ul class="account-list">
+      <li><%= link_to "Bookem for business owners", business_types_path %></li>
+      <li><%= link_to "Privacy", privacy_path %></li>
+    </ul>
+  <% end %>
+</div>

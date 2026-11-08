@@ -1,0 +1,30 @@
+package com.ricealonzo.bookem
+
+import android.os.Bundle
+import android.view.View
+import androidx.activity.enableEdgeToEdge
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import dev.hotwire.navigation.activities.HotwireActivity
+import dev.hotwire.navigation.tabs.HotwireBottomNavigationController
+import dev.hotwire.navigation.tabs.navigatorConfigurations
+import dev.hotwire.navigation.util.applyDefaultImeWindowInsets
+
+class MainActivity : HotwireActivity() {
+    private lateinit var bottomNavigationController: HotwireBottomNavigationController
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        findViewById<View>(R.id.root).applyDefaultImeWindowInsets()
+
+        bottomNavigationController = HotwireBottomNavigationController(
+            activity = this,
+            view = findViewById<BottomNavigationView>(R.id.bottom_nav),
+            lazyLoadTabs = true
+        )
+        bottomNavigationController.load(mainTabs)
+    }
+
+    override fun navigatorConfigurations() = mainTabs.navigatorConfigurations
+}

@@ -36,5 +36,11 @@ Rails.application.routes.draw do
   # Stripe tells Bookem when a deposit is paid or a payment page expires.
   post "stripe/webhook", to: "stripe_webhooks#create", as: :stripe_webhook
 
+  # Pages for the iOS and Android apps.
+  get "account", to: "accounts#show", as: :account
+  get "privacy", to: "pages#privacy", as: :privacy
+  get "configurations/ios_v1", to: "configurations#ios", defaults: { format: :json }
+  get "configurations/android_v1", to: "configurations#android", defaults: { format: :json }
+
   root to: "locations#index"
 end

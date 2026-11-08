@@ -5,6 +5,8 @@ class ApplicationController < ActionController::Base
 
   rescue_from Pundit::NotAuthorizedError, with: :not_authorized
 
+  helper_method :native_app?
+
   protected
 
   def configure_permitted_parameters
@@ -14,6 +16,13 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  # True inside the Bookem iOS and Android apps. Hotwire Native adds
+  # "Hotwire Native iOS;" or "Hotwire Native Android;" to the user agent,
+  # and the apps add "Bookem iOS;" / "Bookem Android;" in front of it.
+  def native_app?
+    request.user_agent.to_s.match?(/Hotwire Native|Turbo Native/)
+  end
 
   def not_authorized
     respond_to do |format|

@@ -547,3 +547,22 @@ select {
 .for-owners h2 { margin-top: 0; }
 .owner-links { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
 .owner-links a { font-weight: 700; }
+
+/* ---- Inside the iOS and Android apps ---- */
+
+/* The app has its own top bar and tab bar, so the page starts right at the top. */
+.native-app .page { padding-top: 1rem; }
+.native-app .back-link { display: none; }
+
+.account-list { list-style: none; padding: 0; margin: 0 0 1.5rem; border-top: 1px solid var(--line); }
+.account-list li { border-bottom: 1px solid var(--line); }
+.account-list a {
+  display: block;
+  padding: 0.9rem 0.25rem;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.account-list a::after { content: "›"; float: right; color: var(--ink-soft); }
+.account-actions { display: grid; gap: 0.6rem; margin-bottom: 1.5rem; }
+.privacy-page h2 { font-size: 1.2rem; margin-top: 1.75rem; }

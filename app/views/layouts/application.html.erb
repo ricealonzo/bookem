@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title><%= content_for?(:title) ? "#{content_for(:title)} | Bookem" : "Bookem: book local studios, salons and spaces" %></title>
+    <%# In the app, the page title is shown in the native top bar, so keep it short. %>
+    <% if native_app? %>
+      <title><%= content_for?(:title) ? content_for(:title) : "Bookem" %></title>
+    <% else %>
+      <title><%= content_for?(:title) ? "#{content_for(:title)} | Bookem" : "Bookem: book local studios, salons and spaces" %></title>
+    <% end %>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="description" content="Book time at studios, salons, barbershops and event spaces run by local owners.">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -40,7 +45,8 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
   </head>
 
-  <body>
+  <body class="<%= "native-app" if native_app? %>">
+    <% unless native_app? %>
     <a class="skip-link" href="#main">Skip to content</a>
 
     <header class="site-header">
@@ -62,6 +68,7 @@
         </nav>
       </div>
     </header>
+    <% end %>
 
     <main id="main" class="page">
       <% if notice.present? %>
@@ -74,9 +81,16 @@
       <%= yield %>
     </main>
 
-    <footer class="site-footer">
-      <p>Bookem connects people with local studios, salons, barbershops and event spaces. <%= link_to "Bookem for business owners", business_types_path %></p>
-    </footer>
+    <%# The apps have their own tab bar (Explore, Bookings, Account) instead. %>
+    <% unless native_app? %>
+      <footer class="site-footer">
+        <p>
+          Bookem connects people with local studios, salons, barbershops and event spaces.
+          <%= link_to "Bookem for business owners", business_types_path %> ·
+          <%= link_to "Privacy", privacy_path %>
+        </p>
+      </footer>
+    <% end %>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
   </body>

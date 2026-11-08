@@ -100,8 +100,9 @@ jobs:
       # The Gradle wrapper (gradlew) lets anyone build with the right Gradle
       # version. Make it if it isn't committed yet.
       - name: Gradle wrapper
+        continue-on-error: true
         run: |
-          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 9.2.0; fi
+          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 9.2.0 --no-validate-url; fi
 
       - name: Build the debug app
         run: |

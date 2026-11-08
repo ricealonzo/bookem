@@ -34,6 +34,10 @@ targets:
             UIWindowSceneSessionRoleApplication:
               - UISceneConfigurationName: Default Configuration
                 UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneController
+        # Hosts upload location photos with a file picker. iOS asks
+        # permission with these words, and apps without them can crash.
+        NSCameraUsageDescription: Bookem uses the camera so you can take a photo of your space for its listing.
+        NSPhotoLibraryUsageDescription: Bookem opens your photos so you can choose a picture of your space for its listing.
         # Lets the app reach `bin/dev` on your Mac while developing.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

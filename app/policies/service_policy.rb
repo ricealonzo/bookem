@@ -1,0 +1,2 @@
+class ServicePolicy < LocationSetupPolicy
+end

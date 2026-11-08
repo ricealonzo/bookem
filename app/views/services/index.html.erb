@@ -1,0 +1,89 @@
+<% content_for :title, "Services and #{@location.resource_label_plural} at #{@location.name}" %>
+<% durations = (1..[ 480 / @location.slot_minutes, 1 ].max).map { |n| n * @location.slot_minutes } %>
+<% duration_options = ->(selected) { options_for_select(durations.map { |m| [ duration_label(m), m ] }, selected) } %>
+<% label = @location.resource_label %>
+
+<div class="narrow setup-page">
+  <header class="page-header">
+    <p class="eyebrow"><%= link_to @location.name, @location %></p>
+    <h1>Services and <%= @location.resource_label_plural %></h1>
+    <p>
+      Services are what guests book, with a set length and price.
+      <%= label.pluralize %> are who or what gets booked. Each one has its own calendar,
+      so you can take one booking per <%= label.downcase %> at the same time.
+    </p>
+  </header>
+
+  <section class="setup-section" aria-labelledby="services-heading">
+    <h2 id="services-heading">Services</h2>
+    <% active_services = @services.select(&:active?) %>
+
+    <% if active_services.empty? %>
+      <p class="empty-state">
+        No services yet, so guests pick any run of open slots
+        <% if @location.slot_price_cents.positive? %>at <%= money_label(@location.slot_price_cents) %> a slot<% end %>.
+        Add a service and guests will choose one when they book.
+      </p>
+    <% else %>
+      <ul class="setup-list">
+        <% active_services.each do |service| %>
+          <li id="<%= dom_id(service) %>">
+            <div class="setup-item-head">
+              <div>
+                <strong><%= service.name %></strong>
+                <span class="service-length"><%= duration_label(service.duration_minutes) %> · <%= money_label(service.price_cents) %></span>
+              </div>
+              <%= button_to "Remove", location_service_path(@location, service), method: :delete,
+                    class: "button button-small button-quiet", data: { confirm: "Remove #{service.name}? Past bookings keep it." } %>
+            </div>
+            <details>
+              <summary>Edit</summary>
+              <%= form_with model: service, url: location_service_path(@location, service), namespace: dom_id(service), class: "setup-form" do |form| %>
+                <%= render "services/fields", form: form, duration_options: duration_options.call(service.duration_minutes) %>
+                <%= form.submit "Save service", class: "button button-small" %>
+              <% end %>
+            </details>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <details class="setup-add" <%= "open" if active_services.empty? %>>
+      <summary class="button button-quiet">Add a service</summary>
+      <%= form_with model: Service.new, url: location_services_path(@location), namespace: "new_service", class: "setup-form" do |form| %>
+        <%= render "services/fields", form: form, duration_options: duration_options.call(@location.slot_minutes) %>
+        <%= form.submit "Add service", class: "button" %>
+      <% end %>
+    </details>
+  </section>
+
+  <section class="setup-section" aria-labelledby="resources-heading">
+    <h2 id="resources-heading"><%= label.pluralize %></h2>
+    <p class="field-hint">
+      Call them whatever guests should see: "Studio A", "Marcus", "Chair 2".
+      You can change the word "<%= label %>" on the <%= link_to "location's edit page", edit_location_path(@location) %>.
+    </p>
+
+    <ul class="setup-list">
+      <% @resources.select(&:active?).each do |resource| %>
+        <li id="<%= dom_id(resource) %>">
+          <%= form_with model: resource, url: location_resource_path(@location, resource), class: "setup-inline" do |form| %>
+            <%= form.label :name, "#{label} name", class: "visually-hidden", for: "resource_name_#{resource.id}" %>
+            <%= form.text_field :name, id: "resource_name_#{resource.id}", required: true, maxlength: 60 %>
+            <%= form.submit "Rename", class: "button button-small button-quiet" %>
+          <% end %>
+          <%= button_to "Remove", location_resource_path(@location, resource), method: :delete,
+                class: "button button-small button-quiet", data: { confirm: "Remove #{resource.name}? Past bookings keep the name." } %>
+        </li>
+      <% end %>
+    </ul>
+
+    <%= form_with model: Resource.new, url: location_resources_path(@location), class: "setup-inline setup-add-inline" do |form| %>
+      <%= form.label :name, "New #{label.downcase}", for: "new_resource_name" %>
+      <%= form.text_field :name, id: "new_resource_name", required: true, maxlength: 60, placeholder: "Studio B, Marcus, Chair 2" %>
+      <%= form.submit "Add #{label.downcase}", class: "button button-small" %>
+    <% end %>
+  </section>
+
+  <p class="back-link"><%= link_to "Back to #{@location.name}", @location %></p>
+</div>

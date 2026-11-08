@@ -4,8 +4,11 @@ import { Controller } from "@hotwired/stimulus"
 // - Choosing a day on the calendar shows that day's time slots.
 // - Guests select one open slot, or a run of back-to-back open slots, and the
 //   hidden start and end fields of the request form are filled in.
+// - When the location offers services, the guest picks a service first and
+//   then its start time; the service's length decides how many slots it takes.
+// - Picking a room, chair or person reloads the calendar with only their times.
 export default class extends Controller {
-  static targets = ["day", "placeholder", "slot", "startInput", "endInput", "summary", "submit"]
+  static targets = ["day", "placeholder", "slot", "startInput", "endInput", "summary", "submit", "service", "filter", "dateInput"]
   static values = { selectedDate: String }
 
   connect() {
@@ -27,6 +30,11 @@ export default class extends Controller {
     const index = Number(button.dataset.index)
     const current = this.selection
 
+    if (this.hasServiceTarget) {
+      this.pickServiceStart(day, index)
+      return
+    }
+
     if (!current || current.day !== day) {
       this.select(day, index, index)
     } else if (index === current.from && index === current.to) {
@@ -40,6 +48,46 @@ export default class extends Controller {
     }
   }
 
+  // A service has a set length: the slot clicked is its start.
+  pickServiceStart(day, index) {
+    const option = this.serviceTarget.selectedOptions[0]
+    const length = Number(option?.dataset.slots || 0)
+    if (!option || !option.value || length < 1) {
+      this.clearSelection()
+      this.say("Choose a service first, then its start time.")
+      this.serviceTarget.focus()
+      return
+    }
+
+    const current = this.selection
+    if (current && current.day === day && current.from === index) {
+      this.clearSelection()
+      return
+    }
+
+    const to = index + length - 1
+    if (this.allOpen(day, index, to)) {
+      this.select(day, index, to)
+      this.summaryTarget.textContent = `${option.dataset.name}: ${this.summaryTarget.textContent}`
+    } else {
+      this.clearSelection()
+      this.say(`${option.dataset.name} needs ${length} open slot${length > 1 ? "s" : ""} in a row from that time. Try an earlier start or another day.`)
+    }
+  }
+
+  changeService() {
+    this.clearSelection()
+  }
+
+  // Reload the calendar for one room, chair or person, keeping the day shown.
+  filterResource(event) {
+    event.target.form.requestSubmit()
+  }
+
+  say(message) {
+    if (this.hasSummaryTarget) this.summaryTarget.textContent = message
+  }
+
   // ---- helpers ----
 
   findDay(date) {
@@ -49,6 +97,7 @@ export default class extends Controller {
 
   show(day, { scroll }) {
     this.dayTargets.forEach((d) => { d.hidden = d !== day })
+    if (this.hasDateInputTarget) this.dateInputTarget.value = day.dataset.date
     if (this.hasPlaceholderTarget) this.placeholderTarget.hidden = true
     if (this.selection && this.selection.day !== day) this.clearSelection()
 

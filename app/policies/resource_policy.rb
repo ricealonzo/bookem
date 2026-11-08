@@ -1,0 +1,2 @@
+class ResourcePolicy < LocationSetupPolicy
+end

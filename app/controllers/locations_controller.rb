@@ -12,8 +12,9 @@ class LocationsController < ApplicationController
   def show
     authorize @location
     @bookings = @location.bookings.active.where.not(started_at: nil).where.not(ended_at: nil).includes(:guest).to_a
-    @booking = Booking.new(location: @location, guest: current_user)
     @selected_date = (Date.iso8601(params[:date].to_s) rescue nil)
+    # Guests can look at one resource's calendar ("Marcus" or "Studio B").
+    @resource = @location.active_resources.detect { |resource| resource.id.to_s == params[:resource_id].to_s }
   end
 
   # GET /locations/new
@@ -80,6 +81,7 @@ class LocationsController < ApplicationController
     hours = (0..6).to_h { |weekday| [ weekday.to_s, [ :open, :opens_at, :closes_at ] ] }
     params.require(:location).permit(
       :name, :description, :address, :city, :state, :postal_code, :image, :slot_minutes,
+      :resource_label, :slot_price_dollars,
       weekly_hours: hours
     )
   end

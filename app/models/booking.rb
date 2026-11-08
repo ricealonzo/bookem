@@ -4,17 +4,22 @@
 #
 #  id          :bigint           not null, primary key
 #  ended_at    :datetime
+#  price_cents :integer          default(0), not null
 #  started_at  :datetime
 #  status      :string           default("pending"), not null
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
 #  guest_id    :integer
 #  location_id :integer
+#  resource_id :bigint
+#  service_id  :bigint
 #
 # Indexes
 #
 #  index_bookings_on_guest_id                  (guest_id)
 #  index_bookings_on_location_id_and_started_at  (location_id,started_at)
+#  index_bookings_on_resource_id_and_started_at  (resource_id,started_at)
+#  index_bookings_on_service_id                (service_id)
 #
 class Booking < ApplicationRecord
   MAX_LENGTH = 30.days
@@ -35,7 +40,18 @@ class Booking < ApplicationRecord
 
   belongs_to :guest, class_name: "User", foreign_key: "guest_id", counter_cache: true
   belongs_to :location, class_name: "Location", foreign_key: "location_id"
+  # Who or what is booked (a room, a chair, a barber). Picked automatically
+  # when the guest doesn't choose.
+  belongs_to :resource
+  # What the guest is buying, when the location offers services.
+  belongs_to :service, optional: true
   has_one :host, through: :location, source: :host
+
+  # A service decides the booking's length; then the first free resource is
+  # picked and the price is worked out.
+  before_validation :apply_service_length
+  before_validation :assign_resource
+  before_validation :set_price, if: :new_record?
 
   validates :started_at, presence: true
   validates :ended_at, presence: true
@@ -44,6 +60,9 @@ class Booking < ApplicationRecord
   validate :starts_in_future, if: :times_changed?
   validate :within_opening_hours, if: :times_changed?
   validate :guest_is_not_host
+  validate :resource_belongs_to_location, if: -> { new_record? || resource_id_changed? }
+  validate :service_belongs_to_location, if: -> { new_record? || service_id_changed? }
+  validate :service_chosen, if: :new_record?
   validate :no_overlap, if: :active?
 
   scope :active, -> { where(status: ACTIVE_STATUSES) }
@@ -85,7 +104,76 @@ class Booking < ApplicationRecord
     update!(status: :cancelled)
   end
 
+  # "$35.00", or nil when the booking is free.
+  def price_label
+    return nil unless price_cents.to_i.positive?
+
+    format("$%.2f", price_cents / 100.0)
+  end
+
   private
+
+  def apply_service_length
+    return if service.blank? || started_at.blank?
+    return unless new_record? || service_id_changed? || started_at_changed?
+
+    self.ended_at = started_at + service.duration_minutes.minutes
+  end
+
+  # With no resource chosen, use the first one that's free for the whole time.
+  def assign_resource
+    return if resource.present? || location.blank?
+
+    candidates = location.active_resources
+    @resource_picked_for_guest = true
+    self.resource = candidates.detect { |candidate| free_on?(candidate) } || candidates.first
+  end
+
+  def set_price
+    return if location.blank?
+
+    self.price_cents =
+      if service.present?
+        service.price_cents
+      elsif started_at.present? && ended_at.present? && ended_at > started_at
+        slots = ((ended_at - started_at) / 60.0 / location.slot_minutes).ceil
+        slots * location.slot_price_cents
+      else
+        0
+      end
+  end
+
+  def free_on?(candidate)
+    return true if started_at.blank? || ended_at.blank?
+
+    !Booking.active.where(resource_id: candidate.id).where.not(id: id).overlapping(started_at, ended_at).exists?
+  end
+
+  def resource_belongs_to_location
+    return if resource.blank? || location.blank?
+
+    if resource.location_id != location.id
+      errors.add(:resource, "isn't part of this location")
+    elsif !resource.active?
+      errors.add(:resource, "isn't taking bookings anymore")
+    end
+  end
+
+  def service_belongs_to_location
+    return if service.blank? || location.blank?
+
+    if service.location_id != location.id
+      errors.add(:service, "isn't offered at this location")
+    elsif !service.active?
+      errors.add(:service, "isn't offered anymore")
+    end
+  end
+
+  def service_chosen
+    return if location.blank? || service.present?
+
+    errors.add(:base, "Choose a service to book") if location.uses_services?
+  end
 
   def times_changed?
     new_record? || started_at_changed? || ended_at_changed?
@@ -124,15 +212,27 @@ class Booking < ApplicationRecord
     errors.add(:base, "You can't book your own location") if location.host_id == guest_id
   end
 
+  # Each resource can only be in one booking at a time.
   def no_overlap
-    return if started_at.blank? || ended_at.blank? || location_id.blank?
+    return if started_at.blank? || ended_at.blank? || resource.blank?
 
     clash = Booking.active
-      .where(location_id: location_id)
+      .where(resource_id: resource.id)
       .where.not(id: id)
       .overlapping(started_at, ended_at)
       .exists?
+    return unless clash
 
-    errors.add(:base, "That time overlaps another booking for this location") if clash
+    errors.add(:base, overlap_message)
+  end
+
+  def overlap_message
+    if location.blank? || location.active_resources.size <= 1
+      "That time overlaps another booking for this location"
+    elsif @resource_picked_for_guest
+      "Every #{location.resource_label.downcase} is booked at that time"
+    else
+      "#{resource.name} is already booked at that time"
+    end
   end
 end

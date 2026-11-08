@@ -1,0 +1,21 @@
+<div class="field">
+  <%= form.label :name %>
+  <%= form.text_field :name, required: true, maxlength: 80, placeholder: "Fade, Mix & master, 2-hour session" %>
+</div>
+
+<div class="field-row">
+  <div class="field">
+    <%= form.label :duration_minutes, "Length" %>
+    <%= form.select :duration_minutes, duration_options %>
+  </div>
+
+  <div class="field">
+    <%= form.label :price_dollars, "Price ($)" %>
+    <%= form.text_field :price_dollars, inputmode: "decimal", placeholder: "35.00" %>
+  </div>
+</div>
+
+<div class="field">
+  <%= form.label :description, "Details (optional)" %>
+  <%= form.text_field :description, maxlength: 300, placeholder: "What's included" %>
+</div>

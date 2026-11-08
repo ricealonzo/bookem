@@ -6,7 +6,7 @@ class BookingsController < ApplicationController
   # The guest's own trips and the requests for locations they host.
   def index
     authorize Booking
-    bookings = policy_scope(Booking).includes(:guest, location: :host).chronological
+    bookings = policy_scope(Booking).includes(:guest, :service, :resource, location: [ :host, :resources ]).chronological
     @bookings = bookings
     @trips = bookings.where(guest_id: current_user.id)
     @requests = bookings.where(locations: { host_id: current_user.id })
@@ -46,6 +46,12 @@ class BookingsController < ApplicationController
       location: location,
       guest: current_user
     )
+    # Only services and resources from this location can be picked; the
+    # model double-checks too.
+    if location
+      @booking.service = location.services.find_by(id: booking_params[:service_id]) if booking_params[:service_id].present?
+      @booking.resource = location.resources.find_by(id: booking_params[:resource_id]) if booking_params[:resource_id].present?
+    end
     authorize @booking
 
     # Lock the location row so two simultaneous requests can't both pass the
@@ -58,7 +64,8 @@ class BookingsController < ApplicationController
         format.json { render :show, status: :created, location: @booking }
       else
         format.html do
-          redirect_to location_path(location, start_date: @booking.started_at&.to_date, date: @booking.started_at&.to_date, anchor: "availability"),
+          redirect_to location_path(location, start_date: @booking.started_at&.to_date, date: @booking.started_at&.to_date,
+                                              resource_id: booking_params[:resource_id].presence, anchor: "availability"),
                       alert: "That time couldn't be booked: #{@booking.errors.full_messages.to_sentence}"
         end
         format.json { render json: @booking.errors, status: :unprocessable_entity }
@@ -91,7 +98,7 @@ class BookingsController < ApplicationController
   end
 
   def booking_params
-    params.expect(booking: [ :started_at, :ended_at, :location_id ])
+    params.expect(booking: [ :started_at, :ended_at, :location_id, :service_id, :resource_id ])
   end
 
   def change_status(notice:)

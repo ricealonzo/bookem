@@ -11,6 +11,7 @@ Built with Ruby 3.4 and Rails 8.1, PostgreSQL, Devise, Pundit, Stimulus and Clou
 - **Browse locations** with photos, details and a map (Mapbox).
 - **Host-set hours.** Each host chooses which days the location is open, the opening and closing times, and a slot length (30 minutes to 8 hours). Guests can only book inside those hours, in whole slots, and the server enforces it.
 - **Availability calendar and day view.** The month view shows how many slots are open each day, or *Booked up* or *Closed*. Choosing a day lists its time slots as Open, Requested, Booked or Past. Guests select a slot, or a run of back-to-back slots, and send the request from the same panel. Visitors can browse open times, and hosts see who booked each slot. The public never sees who booked.
+- **Services and resources.** Hosts list services with a set length and price ("Fade, 1 hr, $35"), and the rooms, chairs or people that get booked ("Studio A", "Marcus"). Each resource has its own calendar, so a shop with three barbers takes three bookings at once. Guests pick a service, optionally pick who or what they want, and choose a start time. See [the lesson](docs/lessons/01-services-and-resources.md).
 - **Host approval.** Requests start as *pending*. The host confirms or declines them from the Bookings page.
 - **Cancel any time before it starts.** Either side can cancel. Bookings are never deleted, so both sides keep a record.
 - **One Bookings page:** requests waiting for your reply come first, with Confirm and Decline on each card, then your upcoming bookings, what's coming up at your locations, and a folded-away history.
@@ -19,7 +20,8 @@ Built with Ruby 3.4 and Rails 8.1, PostgreSQL, Devise, Pundit, Stimulus and Clou
 ## How bookings stay correct
 
 - Times are stored as real timestamps.
-- A location can't be double-booked. Pending and confirmed bookings hold their slot, and declined or cancelled ones free it again.
+- A resource can't be double-booked. Pending and confirmed bookings hold their slot, and declined or cancelled ones free it again. When the guest doesn't choose, the first free resource is used.
+- A service decides the booking's length on the server, and the price is saved on the booking so later price changes don't rewrite old bookings.
 - The overlap check runs while holding a database row lock on the location, so two people submitting at the same moment can't both get the same slot.
 - Bookings must be in the future, fall inside the host's hours on whole slots, and hosts can't book their own location.
 - Times are in Central Time.
@@ -80,7 +82,9 @@ If `CLOUDINARY_URL` isn't set, photos are saved to local disk. That's fine for d
 - **User** — can host locations and book other people's locations.
 - **Location** — belongs to a host, has a slot length, opening hours and many bookings.
 - **OpeningHour** — one open day of the week for a location, with opening and closing times.
-- **Booking** — belongs to a guest and a location, with a start, an end and a status (`pending`, `confirmed`, `declined` or `cancelled`).
+- **Resource** — the room, chair or person that gets booked. Every location has at least one ("Main space" to start).
+- **Service** — something guests can book at a location, with a length (whole slots) and a price in cents.
+- **Booking** — belongs to a guest, a location and a resource, and optionally a service, with a start, an end, the price and a status (`pending`, `confirmed`, `declined` or `cancelled`).
 
 ## Deployment
 

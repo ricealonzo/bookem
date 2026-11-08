@@ -112,6 +112,8 @@ for (const [label, viewport] of Object.entries(sizes)) {
         await logIn(page, process.env.BARBER_HOST_EMAIL)
         await page.goto(`${base}/locations/${process.env.BARBER_LOCATION}/services`)
         await shoot(page, `setup-host-${suffix}`)
+        await page.goto(`${base}/payouts`)
+        await shoot(page, `payouts-host-${suffix}`)
       }
     }
 

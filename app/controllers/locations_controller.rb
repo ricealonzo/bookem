@@ -81,7 +81,7 @@ class LocationsController < ApplicationController
     hours = (0..6).to_h { |weekday| [ weekday.to_s, [ :open, :opens_at, :closes_at ] ] }
     params.require(:location).permit(
       :name, :description, :address, :city, :state, :postal_code, :image, :slot_minutes,
-      :resource_label, :slot_price_dollars,
+      :resource_label, :slot_price_dollars, :deposit_percent,
       weekly_hours: hours
     )
   end

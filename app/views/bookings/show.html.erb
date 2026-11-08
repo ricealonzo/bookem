@@ -10,7 +10,14 @@
   <p class="booking-explainer">
     <% case @booking.status %>
     <% when "pending" %>
-      Waiting for the host to confirm or decline.
+      <% if @booking.deposit_awaiting? && @booking.active? %>
+        Pay the <%= @booking.deposit_label %> deposit to send your request.
+        This time is held for you until <%= short_time(@booking.payment_expires_at.in_time_zone) %>.
+      <% elsif @booking.deposit_awaiting? %>
+        The deposit wasn't paid in time, so this time was released.
+      <% else %>
+        Waiting for the host to confirm or decline.
+      <% end %>
     <% when "confirmed" %>
       Confirmed by the host.
     <% when "declined" %>
@@ -20,7 +27,18 @@
     <% end %>
   </p>
 
+  <% if @booking.deposit_paid? && @booking.guest_id == current_user.id && @booking.cancellable? %>
+    <% refund_until = @booking.started_at - Deposits::FREE_CANCELLATION %>
+    <p class="deposit-note">
+      Your <%= @booking.deposit_label %> deposit is paid.
+      Cancel before <%= refund_until.strftime("%a, %b %-d") %> at <%= short_time(refund_until) %> to get it back.
+    </p>
+  <% end %>
+
   <div class="booking-actions">
+    <% if policy(@booking).pay? %>
+      <%= button_to "Pay deposit", pay_booking_path(@booking), method: :post, class: "button", data: { turbo: false } %>
+    <% end %>
     <% if policy(@booking).confirm? %>
       <%= button_to "Confirm", confirm_booking_path(@booking), method: :patch, class: "button" %>
       <%= button_to "Decline", decline_booking_path(@booking), method: :patch, class: "button button-quiet" %>

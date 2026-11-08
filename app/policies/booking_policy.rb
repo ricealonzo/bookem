@@ -1,5 +1,5 @@
 # A booking is private to its guest and the location's host.
-#   - Guests request bookings and can cancel before they start.
+#   - Guests request bookings, pay any deposit, and can cancel before they start.
 #   - Hosts confirm or decline pending requests, and can cancel before it starts.
 class BookingPolicy < ApplicationPolicy
   def index? = user.present?
@@ -12,6 +12,7 @@ class BookingPolicy < ApplicationPolicy
   def confirm? = host? && record.respondable?
   def decline? = host? && record.respondable?
   def cancel? = (guest? || host?) && record.cancellable?
+  def pay? = guest? && record.deposit_awaiting? && record.active? && record.stripe_checkout_session_id.present?
 
   class Scope < ApplicationPolicy::Scope
     # Bookings the user made, plus bookings at locations they host.

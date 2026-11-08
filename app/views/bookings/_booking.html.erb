@@ -16,6 +16,10 @@
   <% details << booking.service.name if booking.service %>
   <% details << "#{booking.location.resource_label}: #{booking.resource.name}" if booking.resource && booking.resource.name != Resource::DEFAULT_NAME %>
   <% details << booking.price_label if booking.price_label %>
+  <% if booking.deposit_label %>
+    <% details << { "awaiting" => "#{booking.deposit_label} deposit due", "paid" => "#{booking.deposit_label} deposit paid",
+                    "refunded" => "#{booking.deposit_label} deposit refunded", "expired" => "Deposit not paid" }[booking.payment_status] %>
+  <% end %>
   <% if details.any? %>
     <p class="booking-extra"><%= details.join(" · ") %></p>
   <% end %>

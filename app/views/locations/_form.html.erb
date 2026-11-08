@@ -108,6 +108,18 @@
         <p class="field-hint">One word, like Room, Chair or Barber. You add each one on the services page.</p>
       </div>
     </div>
+
+    <div class="field">
+      <%= form.label :deposit_percent, "Deposit to book" %>
+      <%= form.select :deposit_percent, Deposits::PERCENTS.map { |pct| [ pct.zero? ? "No deposit" : (pct == 100 ? "Full price up front" : "#{pct}% of the price"), pct ] } %>
+      <p class="field-hint">
+        <% if current_user&.payouts_ready? %>
+          Guests pay this when they request a time. You get it back if they don't show up.
+        <% else %>
+          Deposits start once you <%= link_to "set up payouts", payouts_path %> with Stripe.
+        <% end %>
+      </p>
+    </div>
   </fieldset>
 
   <%= form.submit location.persisted? ? "Save Changes" : "List This Space", class: "button" %>

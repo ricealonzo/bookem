@@ -3,10 +3,15 @@
 # Table name: bookings
 #
 #  id          :bigint           not null, primary key
+#  deposit_cents :integer        default(0), not null
 #  ended_at    :datetime
+#  payment_expires_at :datetime
+#  payment_status :string        default("not_required"), not null
 #  price_cents :integer          default(0), not null
 #  started_at  :datetime
 #  status      :string           default("pending"), not null
+#  stripe_checkout_session_id :string
+#  stripe_payment_intent_id :string
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
 #  guest_id    :integer
@@ -35,6 +40,18 @@ class Booking < ApplicationRecord
     cancelled: "cancelled"
   }, default: :pending, validate: true
 
+  # The deposit, when the location asks for one:
+  #   not_required → no deposit
+  #   awaiting     → the guest is paying; the time is held until payment_expires_at
+  #   paid → refunded, or expired (the hold ran out before payment)
+  enum :payment_status, {
+    not_required: "not_required",
+    awaiting: "awaiting",
+    paid: "paid",
+    refunded: "refunded",
+    expired: "expired"
+  }, prefix: :deposit, default: :not_required, validate: true
+
   # Bookings that hold their time slot.
   ACTIVE_STATUSES = %w[pending confirmed].freeze
 
@@ -52,6 +69,7 @@ class Booking < ApplicationRecord
   before_validation :apply_service_length
   before_validation :assign_resource
   before_validation :set_price, if: :new_record?
+  before_validation :set_deposit, if: :new_record?
 
   validates :started_at, presence: true
   validates :ended_at, presence: true
@@ -65,13 +83,23 @@ class Booking < ApplicationRecord
   validate :service_chosen, if: :new_record?
   validate :no_overlap, if: :active?
 
-  scope :active, -> { where(status: ACTIVE_STATUSES) }
+  # Pending and confirmed bookings hold their time, except a deposit hold
+  # that ran out before the guest paid.
+  scope :active, lambda {
+    where(status: ACTIVE_STATUSES)
+      .where("bookings.payment_status <> 'awaiting' OR bookings.payment_expires_at > ?", Time.current)
+  }
   scope :upcoming, -> { where(ended_at: Time.current..) }
   scope :chronological, -> { order(:started_at) }
   scope :overlapping, ->(starts, ends) { where("bookings.started_at < ? AND bookings.ended_at > ?", ends, starts) }
 
   def active?
-    ACTIVE_STATUSES.include?(status)
+    ACTIVE_STATUSES.include?(status) && !payment_lapsed?
+  end
+
+  # The guest didn't pay the deposit in time, so the time is free again.
+  def payment_lapsed?
+    deposit_awaiting? && (payment_expires_at.nil? || payment_expires_at <= Time.current)
   end
 
   def upcoming?
@@ -82,8 +110,16 @@ class Booking < ApplicationRecord
     active? && upcoming?
   end
 
+  # Hosts only see a request once any deposit is paid.
   def respondable?
-    pending? && upcoming?
+    pending? && upcoming? && !deposit_awaiting?
+  end
+
+  # "$20.00", or nil when there's no deposit.
+  def deposit_label
+    return nil unless deposit_cents.to_i.positive?
+
+    format("$%.2f", deposit_cents / 100.0)
   end
 
   def confirm!
@@ -141,6 +177,16 @@ class Booking < ApplicationRecord
       else
         0
       end
+  end
+
+  def set_deposit
+    self.deposit_cents = Deposits.amount_for(self)
+    if deposit_cents.positive?
+      self.payment_status = :awaiting
+      self.payment_expires_at = Time.current + Deposits::HOLD
+    else
+      self.payment_status = :not_required
+    end
   end
 
   def free_on?(candidate)

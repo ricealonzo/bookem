@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -25,10 +25,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
     t.bigint "resource_id"
     t.bigint "service_id"
     t.integer "price_cents", default: 0, null: false
+    t.integer "deposit_cents", default: 0, null: false
+    t.string "payment_status", default: "not_required", null: false
+    t.datetime "payment_expires_at"
+    t.string "stripe_checkout_session_id"
+    t.string "stripe_payment_intent_id"
     t.index ["guest_id"], name: "index_bookings_on_guest_id"
     t.index ["location_id", "started_at"], name: "index_bookings_on_location_id_and_started_at"
     t.index ["resource_id", "started_at"], name: "index_bookings_on_resource_id_and_started_at"
     t.index ["service_id"], name: "index_bookings_on_service_id"
+    t.index ["stripe_checkout_session_id"], name: "index_bookings_on_stripe_checkout_session_id", unique: true
   end
 
   create_table "locations", force: :cascade do |t|
@@ -45,6 +51,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
     t.integer "slot_minutes", default: 60, null: false
     t.string "resource_label", default: "Room", null: false
     t.integer "slot_price_cents", default: 0, null: false
+    t.integer "deposit_percent", default: 0, null: false
     t.index ["host_id"], name: "index_locations_on_host_id"
   end
 
@@ -237,8 +244,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
     t.integer "bookings_count"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "stripe_account_id"
+    t.boolean "stripe_charges_enabled", default: false, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["stripe_account_id"], name: "index_users_on_stripe_account_id", unique: true
   end
 
   add_foreign_key "bookings", "resources"

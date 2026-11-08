@@ -92,6 +92,7 @@
         <div class="panel-actions">
           <% if policy(@location).update? %>
             <%= link_to "Services and #{@location.resource_label_plural}", location_services_path(@location), class: "button button-quiet" %>
+            <%= link_to(current_user.payouts_ready? ? "Payouts" : "Set up deposits", payouts_path, class: "button button-quiet") %>
             <%= link_to "Edit location and hours", edit_location_path(@location), class: "button button-quiet" %>
           <% end %>
           <% if policy(@location).destroy? %>
@@ -188,6 +189,12 @@
               <%= form.hidden_field :ended_at, data: { booking_picker_target: "endInput" } %>
               <p class="selection-summary" data-booking-picker-target="summary">No time selected yet.</p>
               <%= form.submit "Request Booking", class: "button button-wide", disabled: true, data: { booking_picker_target: "submit" } %>
+              <% if @location.collects_deposits? %>
+                <p class="deposit-note">
+                  A <%= @location.deposit_percent == 100 ? "full payment" : "#{@location.deposit_percent}% deposit" %> is due when you request.
+                  You get it back if the host declines, or if you cancel at least 24 hours ahead.
+                </p>
+              <% end %>
               <p class="form-hint">
                 <% if @location.uses_services? %>Choose a service, then the time it starts. <% end %>
                 The host confirms or declines your request. You can cancel any time before it starts.

@@ -15,6 +15,8 @@ on:
 jobs:
   ios:
     runs-on: macos-15
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: mobile/ios
@@ -54,15 +56,24 @@ jobs:
           sleep 45
           xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/ios-app.png"
 
-      - uses: actions/upload-artifact@v4
+      # Published to the ci-mobile-ios branch so it can be viewed on GitHub.
+      - name: Publish the screenshot
         if: always()
-        with:
-          name: ios-screenshot
-          path: ${{ runner.temp }}/ios-app.png
-          if-no-files-found: ignore
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}
+        run: |
+          test -f ios-app.png || exit 0
+          mkdir publish && cp ios-app.png publish/ && cd publish
+          git init -q -b ci-mobile-ios
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -q -m "iOS screenshot for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-mobile-ios
 
   android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: mobile/android
@@ -74,9 +85,13 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.2.0"
+      # Downloads sometimes time out on GitHub's runners, so retry them.
+      - name: Install Gradle
+        run: |
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 10 -o "$RUNNER_TEMP/gradle.zip" \
+            https://services.gradle.org/distributions/gradle-9.2.0-bin.zip
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-9.2.0/bin" >> "$GITHUB_PATH"
 
       # The Gradle wrapper (gradlew) lets anyone build with the right Gradle
       # version. Make it if it isn't committed yet.
@@ -85,17 +100,30 @@ jobs:
           if [ ! -f gradlew ]; then gradle wrapper --gradle-version 9.2.0; fi
 
       - name: Build the debug app
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          for attempt in 1 2 3; do
+            gradle assembleDebug --stacktrace && exit 0
+            echo "::warning::Build attempt $attempt failed; retrying in 20 seconds"
+            sleep 20
+          done
+          exit 1
 
       - uses: actions/upload-artifact@v4
         with:
           name: android-debug-apk
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gradle-wrapper
-          path: |
-            mobile/android/gradlew
-            mobile/android/gradlew.bat
-            mobile/android/gradle/wrapper/
+      # Published to the ci-mobile-android branch: the generated Gradle wrapper,
+      # so it can be committed, and the debug app to install on a phone.
+      - name: Publish the wrapper and debug app
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/publish/gradle"
+          cp -r gradlew gradlew.bat gradle/wrapper "$RUNNER_TEMP/publish/"
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/publish/"
+          cd "$RUNNER_TEMP/publish" && mv wrapper gradle/
+          git init -q -b ci-mobile-android
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -f . && git commit -q -m "Android build for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-mobile-android

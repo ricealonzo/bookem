@@ -19,6 +19,13 @@ Rails.application.routes.draw do
     end
   end
 
+  # A location's short booking link, for an Instagram bio or business card.
+  get "b/:slug", to: "locations#show", as: :booking_page
+
+  # Landing pages for each kind of business Bookem is set up for.
+  get "for", to: "business_types#index", as: :business_types
+  get "for/:key", to: "business_types#show", as: :business_type
+
   # Hosts connect a Stripe account so deposits are paid out to them.
   resource :payouts, only: :show do
     post :connect

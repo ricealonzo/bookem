@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_120100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_120200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,7 +52,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120100) do
     t.string "resource_label", default: "Room", null: false
     t.integer "slot_price_cents", default: 0, null: false
     t.integer "deposit_percent", default: 0, null: false
+    t.string "business_type", default: "other", null: false
+    t.string "slug"
     t.index ["host_id"], name: "index_locations_on_host_id"
+    t.index ["slug"], name: "index_locations_on_slug", unique: true
   end
 
   create_table "opening_hours", force: :cascade do |t|

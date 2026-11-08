@@ -1,12 +1,37 @@
 <% content_for :title, "List your space" %>
 
 <div class="narrow form-page">
-  <header class="page-header">
-    <h1>List your space</h1>
-    <p>Add your location so people nearby can request time there. You'll confirm each request yourself.</p>
-  </header>
+  <% if @choosing_type %>
+    <header class="page-header">
+      <h1>What kind of business is it?</h1>
+      <p>We'll start you off with the usual hours, slot length and services for it. You can change everything afterwards.</p>
+    </header>
 
-  <%= render "form", location: @location %>
+    <ul class="type-picker">
+      <% BusinessType.all.each do |type| %>
+        <li>
+          <%= link_to new_location_path(type: type.key), class: "type-option" do %>
+            <strong><%= type.name %></strong>
+            <span><%= type.resource_label.pluralize %>, <%= slot_length_adjective(type.slot_minutes) %> slots<%= ", starter services" if type.services.any? %></span>
+          <% end %>
+        </li>
+      <% end %>
+      <li>
+        <%= link_to new_location_path(type: BusinessType::OTHER.key), class: "type-option type-option-quiet" do %>
+          <strong><%= BusinessType::OTHER.name %></strong>
+          <span>Start from a blank setup</span>
+        <% end %>
+      </li>
+    </ul>
+  <% else %>
+    <header class="page-header">
+      <p class="eyebrow"><%= link_to "Change business type", new_location_path %></p>
+      <h1>List your <%= @business_type&.key == "other" || @business_type.nil? ? "space" : @business_type.name.downcase %></h1>
+      <p>Add your location so people nearby can request time there. You'll confirm each request yourself.</p>
+    </header>
+
+    <%= render "form", location: @location %>
+  <% end %>
 
   <p class="back-link"><%= link_to "Back to all locations", locations_path %></p>
 </div>

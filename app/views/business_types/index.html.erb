@@ -1,0 +1,22 @@
+<% content_for :title, "Bookem for business owners" %>
+
+<div class="narrow">
+  <header class="page-header">
+    <h1>Online booking for local businesses</h1>
+    <p>
+      Customers see your open times and book themselves. You confirm each request,
+      and a deposit can make no-shows rare. Pick your kind of business to see how it works.
+    </p>
+  </header>
+
+  <ul class="type-picker">
+    <% @business_types.each do |type| %>
+      <li>
+        <%= link_to business_type_path(type.key), class: "type-option" do %>
+          <strong><%= type.name %></strong>
+          <span><%= type.headline %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</div>

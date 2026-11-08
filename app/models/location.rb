@@ -4,6 +4,7 @@
 #
 #  id          :bigint           not null, primary key
 #  address     :string
+#  business_type :string        default("other"), not null
 #  city        :string
 #  deposit_percent :integer      default(0), not null
 #  description :string
@@ -13,6 +14,7 @@
 #  resource_label :string        default("Room"), not null
 #  slot_minutes :integer         default(60), not null
 #  slot_price_cents :integer     default(0), not null
+#  slug        :string
 #  state       :string
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
@@ -43,6 +45,14 @@ class Location < ApplicationRecord
   validates :slot_minutes, inclusion: { in: SLOT_LENGTHS, message: "isn't one of the offered lengths" }
   validates :resource_label, presence: true, length: { maximum: 30 }
   validates :slot_price_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  # Booking links look like /b/riverside-barbershop.
+  SLUG_FORMAT = /\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
+  RESERVED_SLUGS = %w[new edit admin api bookings locations payouts users for b].freeze
+
+  validates :business_type, inclusion: { in: BusinessType::KEYS }
+  validates :slug, presence: true, length: { in: 3..60 }, uniqueness: true,
+                   format: { with: SLUG_FORMAT, message: "can only use lowercase letters, numbers and dashes" },
+                   exclusion: { in: RESERVED_SLUGS, message: "is reserved" }
   validates :deposit_percent, inclusion: { in: Deposits::PERCENTS, message: "isn't one of the offered amounts" }
   validate :open_at_least_one_day
   validate :services_fit_the_slots, if: :slot_minutes_changed?
@@ -59,6 +69,7 @@ class Location < ApplicationRecord
 
   before_validation :apply_default_hours, on: :create
   before_validation :add_default_resource, on: :create
+  before_validation :fill_in_slug
 
   def full_address
     [ address, city, state, postal_code ].compact_blank.join(", ")
@@ -66,6 +77,40 @@ class Location < ApplicationRecord
 
   def hosted_by?(user)
     user.present? && host_id == user.id
+  end
+
+  def business
+    BusinessType.fetch(business_type)
+  end
+
+  # Fills in a new location's form (before any hours are built) from a business type: slot length,
+  # hours, what resources are called, price and deposit.
+  def apply_business_type(key)
+    preset = BusinessType.find(key)
+    return unless preset
+
+    self.business_type = preset.key
+    self.slot_minutes = preset.slot_minutes
+    self.resource_label = preset.resource_label
+    self.slot_price_cents = preset.slot_price_cents
+    self.deposit_percent = preset.deposit_percent
+    BusinessType.weekly_hours(preset).each do |weekday, day|
+      opening_hours.build(weekday: weekday.to_i, opens_at_text: day["opens_at"], closes_at_text: day["closes_at"])
+    end
+  end
+
+  # After a new location is saved: name its first resource and add the
+  # preset's starter services. A starter service that doesn't fit the
+  # host's chosen slot length is skipped.
+  def add_starter_setup!
+    preset = BusinessType.find(business_type)
+    return unless preset
+
+    first = resources.first
+    first.update!(name: preset.resources.first) if first&.name == Resource::DEFAULT_NAME && preset.resources.any?
+    return if services.exists?
+
+    preset.services.each { |attrs| services.create(attrs) }
   end
 
   def active_resources
@@ -200,6 +245,24 @@ class Location < ApplicationRecord
     return if @weekly_hours_given || opening_hours.any?
 
     DEFAULT_HOURS.each { |attrs| opening_hours.build(attrs) }
+  end
+
+  # A typed link is tidied ("My Shop!" => "my-shop"). A blank one is made
+  # from the name: "riverside-barbershop", or "riverside-barbershop-2" if
+  # that's taken.
+  def fill_in_slug
+    self.slug = slug.to_s.parameterize.presence
+    return if slug.present?
+
+    base = (name.to_s.parameterize.presence || "location").first(50).delete_suffix("-")
+    base = "#{base}-place" if base.length < 3 || RESERVED_SLUGS.include?(base)
+    candidate = base
+    number = 1
+    while Location.where.not(id: id).exists?(slug: candidate)
+      number += 1
+      candidate = "#{base}-#{number}"
+    end
+    self.slug = candidate
   end
 
   def add_default_resource

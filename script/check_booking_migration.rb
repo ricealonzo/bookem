@@ -25,4 +25,9 @@ abort "old location's resource is #{resource.name.inspect}, expected \"Main spac
 abort "old booking should have no service" unless first.service_id.nil?
 puts "::notice::Old booking moved onto the location's #{resource.name.inspect} resource"
 
+# Booking links: old locations get a slug from their name and id.
+slug = first.location.slug
+abort "old location's slug is #{slug.inspect}, expected \"old-studio-1\"" unless slug == "old-studio-1"
+puts "::notice::Old location's booking link is /b/#{slug}"
+
 puts "::notice::Booking migration converted text times correctly (#{row["started_at"]} -> #{row["ended_at"]}, #{row["status"]})"

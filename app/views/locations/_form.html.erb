@@ -10,9 +10,20 @@
     </div>
   <% end %>
 
+  <%= form.hidden_field :business_type %>
+
   <div class="field">
     <%= form.label :name %>
     <%= form.text_field :name, required: true, placeholder: "Northside Creative Studio" %>
+  </div>
+
+  <div class="field">
+    <%= form.label :slug, "Booking link" %>
+    <div class="link-field">
+      <span class="link-prefix"><%= request.host %>/b/</span>
+      <%= form.text_field :slug, maxlength: 60, placeholder: "your-business-name", autocapitalize: "none", spellcheck: false %>
+    </div>
+    <p class="field-hint">The link you share with customers. Leave it blank and we'll make one from the name.</p>
   </div>
 
   <div class="field">

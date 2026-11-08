@@ -474,3 +474,69 @@ select {
 .setup-list form.button_to { margin: 0; }
 .setup-add-inline { flex-wrap: wrap; }
 .setup-add-inline label { flex-basis: 100%; }
+
+/* ---- Business types, booking links, landing pages ---- */
+
+.type-picker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+.type-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  height: 100%;
+  padding: 1rem 1.1rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.type-option:hover,
+.type-option:focus-visible { border-color: var(--awning); background: var(--awning-tint); color: var(--ink); }
+.type-option strong { font-size: 1.05rem; }
+.type-option span { color: var(--ink-soft); font-size: 0.92rem; }
+.type-option-quiet { border-style: dashed; }
+
+.link-field { display: flex; align-items: stretch; }
+.link-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0.6rem;
+  border: 1.5px solid var(--line);
+  border-right: 0;
+  border-radius: var(--radius-small) 0 0 var(--radius-small);
+  background: var(--closed);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.link-field input { border-radius: 0 var(--radius-small) var(--radius-small) 0; min-width: 0; flex: 1; }
+
+.share-link {
+  border: 1.5px dashed var(--awning);
+  border-radius: var(--radius-small);
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+.share-label { font-weight: 700; margin: 0 0 0.2rem; }
+.share-url { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+
+.landing-pain { font-size: 1.1rem; }
+.perk-list { padding-left: 1.2rem; }
+.perk-list li { margin-bottom: 0.45rem; }
+
+.for-owners {
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  border-radius: var(--radius-large);
+  background: var(--awning-tint);
+}
+.for-owners h2 { margin-top: 0; }
+.owner-links { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+.owner-links a { font-weight: 700; }

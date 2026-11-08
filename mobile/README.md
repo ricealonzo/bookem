@@ -29,7 +29,7 @@ The Xcode project is generated, so change `project.yml` (not the project's setti
 
 Open the `mobile/android` folder in Android Studio and press Run. To use your own laptop's server, set `ROOT_URL = LOCAL` in `Bookem.kt`. The emulator reaches your laptop at `10.0.2.2`. Debug builds allow plain `http://` for this (`app/src/debug/AndroidManifest.xml`); release builds stay HTTPS-only.
 
-If Android Studio asks about the Gradle wrapper, let it create one, or run `gradle wrapper --gradle-version 9.2.0` in `mobile/android`.
+From a terminal, `./gradlew assembleDebug` in `mobile/android` builds the same app. The wrapper (`gradlew`) downloads the right Gradle version (9.2.0) the first time.
 
 ## Getting into the App Store
 
